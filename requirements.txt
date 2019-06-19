@@ -1,2 +1,13 @@
-Flask==0.12.2
+certifi==2019.6.16
+chardet==3.0.4
+Click==7.0
 cloudant==2.4.0
+Flask==0.12.2
+idna==2.8
+itsdangerous==1.1.0
+Jinja2==2.10.1
+lxml==4.3.4
+MarkupSafe==1.1.1
+requests==2.22.0
+urllib3==1.25.3
+Werkzeug==0.15.4
