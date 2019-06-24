@@ -6,7 +6,7 @@ import json
 
 app = Flask(__name__, static_url_path='')
 
-db_name = 'mydb'
+db_name = 'resilapp-communities'
 client = None
 db = None
 
@@ -40,37 +40,71 @@ port = int(os.getenv('PORT', 8000))
 
 @app.route('/')
 def root():
-    return app.send_static_file('index.html')
+    return app.send_static_file('community-index.html')
 
-# /* Endpoint to greet and add a new visitor to database.
-# * Send a POST request to localhost:8000/api/visitors with body
-# * {
-# *     "name": "Bob"
-# * }
-# */
-@app.route('/api/visitors', methods=['GET'])
-def get_visitor():
+
+# /**
+#  * Endpoint to get a JSON array of all the communities in the database
+#  * REST API example:
+#  * <code>
+#  * GET http://localhost:8000/api/communities
+#  * </code>
+#  * @return An array of all the communities data
+#  */
+@app.route('/api/communities', methods=['GET'])
+def get_communities():
     if client:
-        return jsonify(list(map(lambda doc: doc['name'], db)))
+        return jsonify(list(map(lambda doc: doc, db)))
     else:
         print('No database')
         return jsonify([])
 
-# /**
-#  * Endpoint to get a JSON array of all the visitors in the database
-#  * REST API example:
-#  * <code>
-#  * GET http://localhost:8000/api/visitors
-#  * </code>
-#  *
-#  * Response:
-#  * [ "Bob", "Jane" ]
-#  * @return An array of all the visitor names
-#  */
-@app.route('/api/visitors', methods=['POST'])
-def put_visitor():
-    user = request.json['name']
-    data = {'name':user}
+@app.route('/api/communities/<community>', methods=['GET'])
+def get_community(community):
+    if client:
+    	community_list = list(map(lambda doc:(doc if doc['name']==community else None), db))
+    	community_list = [i for i in community_list if i!=None]
+        return jsonify(community_list)
+    else:
+        print('No database')
+        return jsonify([])
+
+# /* Endpoint to add a new community to database.
+# * Send a POST request to localhost:8000/api/visitors with body
+# * {
+# *     "name": "Community Name",
+#		"ubication_x": Longitude_As_Number,
+#		"ubication_y": Latitude_As_Number,
+#		"province": Province or State,
+#		"canton": City,
+#		"resilience": {Resilience_Object}
+# * }
+# */
+# /* A Resilience_Object will contain:
+#	{
+#		"resilience_level":Decimal_Number_From_Zero_To_One,
+#		"badges":[{				------> This one is a list, containing one or several ResilienceBadge_Object(s)
+#			"title":"Beginner",
+#			"description":"First Badge",
+#			"icon":"url_for_image"
+#	}
+#*/
+@app.route('/api/communities', methods=['POST'])
+def put_community():
+    name = request.json['name']
+    ubication_x = request.json['ubication_x']
+    ubication_y = request.json['ubication_y']
+    province = request.json['province']
+    canton = request.json['canton']
+    resilience = request.json['resilience']
+    data = {
+    		'name':name,
+    		'ubication_x':ubication_x,
+			'ubication_y':ubication_y,
+			'province':province,
+			'canton':canton,
+			'resilience':resilience
+    		}
     if client:
         my_document = db.create_document(data)
         data['_id'] = my_document['_id']

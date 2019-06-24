@@ -29,23 +29,23 @@
             $.i18n().load( {
                 en: {
                     "welcome": "Welcome.",
-                    "name": "name",
-                    "what_is_your_name": "What is your name?",
+                    "community": "community",
+                    "what_is_your_community": "What is your community?",
                     "hello": "Hello $1",
                     "added_to_database": "Hello $1, I've added you to the database!",
                     "database_contents": "Database contents: "
                 },
-                ja: {
-                    "welcome": "ようこそ。",
-                    "name": "名前",
-                    "what_is_your_name": "お名前を教えてください。",
-                    "hello": "こんにちは $1",
-                    "added_to_database": "こんにちは $1 さん、あなたをデータベースに追加しました。",
-                    "database_contents": "データベースの内容: "
+                es: {
+                    "welcome": "Bienvenido",
+                    "community": "Comunidad",
+                    "what_is_your_name": "¿Cuál es su comunidad?",
+                    "hello": "Hola $1",
+                    "added_to_database": "Hola $1, añadimos tu comunidad a la base de datos",
+                    "database_contents": "Comunidades: "
                 }
             } );
             $('body').i18n();
-            $('#user_name').attr("placeholder", $.i18n('name') );
+            $('#community_name').attr("placeholder", $.i18n('community') );
         });
         </script>
 
@@ -54,9 +54,9 @@
 <body>
     <div class="container" id="container">
         <h1 data-i18n="welcome"></h1> <!- Welcome ->
-        <div id="nameInput" class="input-group-lg center-block helloInput">
-            <p class="lead" data-i18n="what_is_your_name"></p>
-            <input id="user_name" type="text" class="form-control" aria-describedby="sizing-addon1" value="" />
+        <div id="communityInput" class="input-group-lg center-block helloInput">
+            <p class="lead" data-i18n="what_is_your_community"></p>
+            <input id="community_name" type="text" class="form-control" aria-describedby="sizing-addon1" value="" />
         </div>
         <p id="response" class="lead text-center"></p>
 
@@ -64,7 +64,7 @@
     </div>
     <footer class="footer">
         <div class="container">
-            <span><a href="https://console.bluemix.net/docs/tutorials/index.html" target="_blank">Looking for more tutorials?</a></span>
+            <span>Disclaimer</span>
         </div>
     </footer>
 
@@ -76,35 +76,35 @@
 
 <script>
     	//Submit data when enter key is pressed
-        $('#user_name').keydown(function(e) {
-        	var name = $('#user_name').val();
-            if (e.which == 13 && name.length > 0) { //catch Enter key
+        $('#community_name').keydown(function(e) {
+        	var community = $('#community_name').val();
+            if (e.which == 13 && community.length > 0) { //catch Enter key
             	//POST request to API to create a new visitor entry in the database
                 $.ajax({
 				  method: "POST",
-				  url: "./api/visitors",
+				  url: "./api/communities",
 				  contentType: "application/json",
-				  data: JSON.stringify({name: name })
+				  data: JSON.stringify({community: community })
 				})
                 .done(function(data) {
-                    if(data && data.name){
+                    if(data && data.community){
                         if(data._id)
                             $('#response').html($.i18n('added_to_database', AntiXSS.sanitizeInput(data.name)));
                         else
-                            $('#response').html($.i18n('hello', AntiXSS.sanitizeInput(data.name))); 
+                            $('#response').html($.i18n('hello', AntiXSS.sanitizeInput(data.community))); 
                     }
                     else {
                         $('#response').html(AntiXSS.sanitizeInput(data));
                     }
-                    $('#nameInput').hide();
-                    getNames();
+                    $('#communityInput').hide();
+                    getCommunities();
                 });
             }
         });
 
         //Retrieve all the visitors from the database
-        function getNames(){
-          $.get("./api/visitors")
+        function getCommunities(){
+          $.get("./api/communities")
               .done(function(data) {
                   if(data.length > 0) {
                     data.forEach(function(element, index) {
@@ -116,7 +116,7 @@
           }
 
           //Call getNames on page load.
-          getNames();
+          getCommunities();
 
 
     </script>
