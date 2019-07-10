@@ -1,3 +1,4 @@
+# coding=latin_1
 from lxml import html
 import requests
 

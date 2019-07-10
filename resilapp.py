@@ -1,43 +1,18 @@
-from cloudant import Cloudant
+# coding=latin_1
 from flask import Flask, render_template, request, jsonify
 import atexit
 import os
 import json
 from SQL_Database import DB2_Towns, DB2_Communities
+from Cloudant_DB import Cloudant_Communities
 
 app = Flask(__name__, static_url_path='')
-
-db_name = 'resilapp-communities'
-client = None
-db = None
-
-if 'VCAP_SERVICES' in os.environ:
-    vcap = json.loads(os.getenv('VCAP_SERVICES'))
-    print('Found VCAP_SERVICES')
-    if 'cloudantNoSQLDB' in vcap:
-        creds = vcap['cloudantNoSQLDB'][0]['credentials']
-        user = creds['username']
-        password = creds['password']
-        url = 'https://' + creds['host']
-        client = Cloudant(user, password, url=url, connect=True)
-        db = client.create_database(db_name, throw_on_exists=False)
-elif "CLOUDANT_URL" in os.environ:
-    client = Cloudant(os.environ['CLOUDANT_USERNAME'], os.environ['CLOUDANT_PASSWORD'], url=os.environ['CLOUDANT_URL'], connect=True)
-    db = client.create_database(db_name, throw_on_exists=False)
-elif os.path.isfile('vcap-local.json'):
-    with open('vcap-local.json') as f:
-        vcap = json.load(f)
-        print('Found local VCAP_SERVICES')
-        creds = vcap['services']['cloudantNoSQLDB'][0]['credentials']
-        user = creds['username']
-        password = creds['password']
-        url = 'https://' + creds['host']
-        client = Cloudant(user, password, url=url, connect=True)
-        db = client.create_database(db_name, throw_on_exists=False)
 
 # On IBM Cloud Cloud Foundry, get the port number from the environment variable PORT
 # When running this app on the local machine, default the port to 8000
 port = int(os.getenv('PORT', 8000))
+
+cloudant_db = Cloudant_Communities()
 
 @app.route('/')
 def root():
@@ -76,9 +51,9 @@ def root():
 @app.route('/api/communities', methods=['POST', 'GET'])
 def communities():
     if request.method == 'GET':
-        if client:
-            db = "resilapp-communities"
-            return jsonify(list(map(lambda doc: doc, db)))
+        if cloudant_db.client:
+            cloudant_db.db = "resilapp-communities"
+            return jsonify(list(map(lambda doc: doc, cloudant_db.db)))
         else:
             print('No database')
             return jsonify([])
@@ -97,21 +72,21 @@ def communities():
                 'city':city,
                 'resilience':resilience
                 }
-        if client:
-            db = "resilapp-communities"
-            my_document = db.create_document(data)
+        if cloudant_db.client:
+            cloudant_db.db = "resilapp-communities"
+            my_document = cloudant_db.db.create_document(data)
             data['_id'] = my_document['_id']
             return jsonify(data)
         else:
             print('No database')
             return jsonify(data)
-    
+
 
 @app.route('/api/communities/<community>', methods=['GET'])
 def get_community(community):
-    if client:
-        db = "resilapp-communities"
-        community_list = list(map(lambda doc:(doc if doc['name']==community else None), db))
+    if cloudant_db.client:
+        cloudant_db.db = "resilapp-communities"
+        community_list = list(map(lambda doc:(doc if doc['name']==community else None), cloudant_db.db))
         community_list = [i for i in community_list if i!=None]
         return jsonify(community_list)
     else:
@@ -132,12 +107,12 @@ def put_community(province, city, town):
             'PUEBLO':PUEBLO,
             'RESILIENCIA':RESILIENCIA
             }
-    if client:
-        db_name = 'resilapp-communities-badges'
-        db = client.create_database(db_name, throw_on_exists=False)
-        my_document = db.create_document(data)
+    if cloudant_db.client:
+        cloudant_db.db_name = 'resilapp-communities-badges'
+        cloudant_db.db = client.create_database(cloudant_db.db_name, throw_on_exists=False)
+        my_document = cloudant_db.db.create_document(data)
         data['_id'] = my_document['_id']
-        community = list(map(lambda doc:(doc if doc['PUEBLO']==PUEBLO else None), db))
+        community = list(map(lambda doc:(doc if doc['POBLAC_ID']==POBLAC_ID else None), cloudant_db.db))
         community = [i for i in community if i!=None]
         community = community[0]
         town['RESILIENCIA'] = dict(_id=community['_id'],_rev=community['_rev'])

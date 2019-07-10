@@ -1,4 +1,6 @@
+# coding=latin_1
 from sqlalchemy import Text, Float, Integer, MetaData, create_engine, Table, Column, insert, select, and_, distinct, update
+from sqlalchemy.sql import func
 from json import dumps
 from pprint import pprint
 
@@ -303,13 +305,81 @@ class DB2_Resilience_Steps:
         return Stages
 
 
+    def count_resilience_steps(self):
+        selectQuery = select([func.count(self.Resiliencia.c.ID).label('Pasos')]).where(self.Resiliencia.c.Paso>0)
+        resultsProxy = self.mainConnection.execute(selectQuery)
+        record = resultsProxy.first()
+        return record.Pasos
+
+
+    def count_resilience_steps_within_stage(self, stage):
+        selectQuery = select([func.count(self.Resiliencia.c.ID).label('Pasos')]).where(
+                                                                                        and_(
+                                                                                            self.Resiliencia.c.Etapa==stage,
+                                                                                            self.Resiliencia.c.Paso>0
+                                                                                        )
+                                                                                )
+        resultsProxy = self.mainConnection.execute(selectQuery)
+        record = resultsProxy.first()
+        return record.Pasos
+
+
+    def count_resilience_stages(self):
+        selectQuery = select([func.count(self.Resiliencia.c.ID).label('Etapas')]).where(self.Resiliencia.c.Paso==0)
+        resultsProxy = self.mainConnection.execute(selectQuery)
+        record = resultsProxy.first()
+        return record.Etapas
+
+
+    def count_accomplished_resilience_steps(self, stage, step):
+        selectQuery = select([func.count(self.Resiliencia.c.ID).label('Pasos')]).where(
+                                                                                        and_(
+                                                                                            self.Resiliencia.c.Etapa<=stage,
+                                                                                            self.Resiliencia.c.Paso<step,
+                                                                                            self.Resiliencia.c.Paso>0
+                                                                                        )
+                                                                                )
+        resultsProxy = self.mainConnection.execute(selectQuery)
+        record = resultsProxy.first()
+        return record.Pasos
+
+
+    def count_accomplished_resilience_steps_within_stage(self, stage, step):
+        selectQuery = select([func.count(self.Resiliencia.c.ID).label('Pasos')]).where(
+                                                                                        and_(
+                                                                                            self.Resiliencia.c.Etapa==stage,
+                                                                                            self.Resiliencia.c.Paso<step,
+                                                                                            self.Resiliencia.c.Paso>0
+                                                                                        )
+                                                                                )
+        resultsProxy = self.mainConnection.execute(selectQuery)
+        record = resultsProxy.first()
+        return record.Pasos
+
+
+    def get_accomplished_percentages_total_and_stage(self, CurrentStage, CurrentStep):
+        Total = self.count_accomplished_resilience_steps(CurrentStage, CurrentStep)
+        Stage = self.count_accomplished_resilience_steps_within_stage(CurrentStage, CurrentStep)
+        TotalCount = self.count_resilience_steps()
+        StageCount = self.count_resilience_steps_within_stage(CurrentStage)
+        TotalPercentage = round((Total/TotalCount*100),1)
+        StagePercentage = round((Stage/StageCount*100),1)
+        Percentages = dict(Total=TotalPercentage,Stage=StagePercentage)
+        return Percentages
+
+
 def main():
-    db=DB2_Towns.getInstance()
-    TOWNS = db.select_all_Towns_by_State_and_City("HEREDIA","BARVA")
-    print(TOWNS)
-    TOWN=db.select_Town_dictionary_by_State_City_and_Name("HEREDIA","BARVA","SAN JOSE DE LA MONTAÑA")
-    print()
-    print(TOWN)
+    db = DB2_Resilience_Steps.getInstance()
+    steps = db.count_resilience_steps()
+    stages = db.count_resilience_stages()
+    accomplished = db.count_accomplished_resilience_steps(2,8)
+    accomplished_in = db.count_accomplished_resilience_steps_within_stage(2,8)
+    percentages = db.get_accomplished_percentages_total_and_stage(2,8)
+    print("Etapas: ", stages)
+    print("Pasos: ",steps)
+    print("Cumplidos: ",accomplished,"(total) / ", accomplished_in, "(en esta etapa)")
+    print("Percentages: ", percentages["Total"], "% / ", percentages["Stage"],"%")
+
 
 
 if __name__=="__main__":
