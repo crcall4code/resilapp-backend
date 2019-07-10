@@ -77,7 +77,7 @@ def root():
 def communities():
     if request.method == 'GET':
         if client:
-	        db = "resilapp-communities"
+            db = "resilapp-communities"
             return jsonify(list(map(lambda doc: doc, db)))
         else:
             print('No database')
@@ -98,7 +98,7 @@ def communities():
                 'resilience':resilience
                 }
         if client:
-        	db = "resilapp-communities"
+            db = "resilapp-communities"
             my_document = db.create_document(data)
             data['_id'] = my_document['_id']
             return jsonify(data)
@@ -110,7 +110,7 @@ def communities():
 @app.route('/api/communities/<community>', methods=['GET'])
 def get_community(community):
     if client:
-    	db = "resilapp-communities"
+        db = "resilapp-communities"
         community_list = list(map(lambda doc:(doc if doc['name']==community else None), db))
         community_list = [i for i in community_list if i!=None]
         return jsonify(community_list)
@@ -157,7 +157,7 @@ def get_provinces():
 @app.route('/api/towns/<province>', methods=['GET'])
 def get_cities(province):
     db = DB2_Towns.getInstance()
-    cities = db.select_all_Cityes_by_State(province)
+    cities = db.select_all_Cities_by_State(province)
     return jsonify(cities)
 
 @app.route('/api/towns/<province>/<city>', methods=['GET'])

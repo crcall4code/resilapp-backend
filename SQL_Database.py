@@ -40,7 +40,7 @@ class DB2_Towns:
         TownsNames = []
         results = resultsProxy.fetchall()
         for row in results:
-            Town_City_State = "({},{},{})".format(row[4],row[3],row[2])
+            Town_City_State = "({},{},{})".format(row[4].replace("\u00c3\u2018","Ñ"),row[3].replace("\u00c3\u2018","Ñ"),row[2])
             TownsNames.append(Town_City_State)
         resultsProxy.close()
         return TownsNames
@@ -60,7 +60,8 @@ class DB2_Towns:
         print(selectQuery)
         resultsProxy = self.mainConnection.execute(selectQuery)
         Cities = resultsProxy.fetchall()
-        Cities = [city[0] for city in Cities]
+        Cities = [city[0].replace("\u00c3\u2018","Ñ") for city in Cities]
+        #Cities = [city.replace("Ã‘","Ñ") for city in Cities]
         resultsProxy.close()
         return Cities
 
@@ -69,12 +70,13 @@ class DB2_Towns:
         selectQuery = select([self.Towns.c.PUEBLO]).where(
                                                             and_(
                                                                 self.Towns.c.PROVINCIA==State,
-                                                                self.Towns.c.CANTON==City
+                                                                self.Towns.c.CANTON==City.replace("Ñ","\u00c3\u2018")
                                                                 )
                                                             )
         resultsProxy = self.mainConnection.execute(selectQuery)
         Towns = resultsProxy.fetchall()
-        Towns = [town[0] for town in Towns]
+        Towns = [town[0].replace("\u00c3\u2018","Ñ") for town in Towns]
+        #Towns = [town[0].replace("Ã‘","Ñ") for town in Towns]
         resultsProxy.close()
         return Towns
 
@@ -86,8 +88,8 @@ class DB2_Towns:
         TownsList = []
         for Town in Towns:
             TownAsDictionary = dict(
-                CANTON=Town[3],
-                PUEBLO=Town[4]
+                CANTON=Town[3].replace("\u00c3\u2018","Ñ"),
+                PUEBLO=Town[4].replace("\u00c3\u2018","Ñ")
                 )
             TownsList.append(TownAsDictionary)
         resultsProxy.close()
@@ -98,7 +100,7 @@ class DB2_Towns:
         selectQuery = select([self.Towns]).where(
                         and_(
                             self.Towns.c.PROVINCIA==State,
-                            self.Towns.c.CANTON==City
+                            self.Towns.c.CANTON==City.replace("Ñ","\u00c3\u2018")
                             )
                         )
         resultsProxy = self.mainConnection.execute(selectQuery)
@@ -106,7 +108,7 @@ class DB2_Towns:
         TownsList = []
         for Town in Towns:
             TownAsDictionary = dict(
-                PUEBLO=Town[4]
+                PUEBLO=Town[4].replace("\u00c3\u2018","Ñ")
                 )
             TownsList.append(TownAsDictionary)
         resultsProxy.close()
@@ -117,8 +119,8 @@ class DB2_Towns:
         selectQuery = select([self.Towns]).where(
                         and_(
                             self.Towns.c.PROVINCIA==State,
-                            self.Towns.c.CANTON==City,
-                            self.Towns.c.PUEBLO==Town
+                            self.Towns.c.CANTON==City.replace("Ñ","\u00c3\u2018"),
+                            self.Towns.c.PUEBLO==Town.replace("Ñ","\u00c3\u2018")
                             )
                         )
         resultsProxy = self.mainConnection.execute(selectQuery)
@@ -128,8 +130,8 @@ class DB2_Towns:
                 ID=Town[0],
                 POBLAC_ID=Town[1],
                 PROVINCIA=Town[2],
-                CANTON=Town[3],
-                PUEBLO=Town[4],
+                CANTON=Town[3].replace("\u00c3\u2018","Ñ"),
+                PUEBLO=Town[4].replace("\u00c3\u2018","Ñ"),
                 X_COORDENATES=Town[5],
                 Y_COORDENATES=Town[6]
                 )
@@ -167,7 +169,7 @@ class DB2_Communities:
 
 
     def insert_Community(self, CommunityDataAsDictionary):
-        if (self.is_community_in_database(CommunityDataAsDictionary)==False):
+        if (self.is_community_in_database(CommunityDataAsDictionary)[0]==False):
             insert = self.Communities.insert().values(
                 POBLAC_ID = CommunityDataAsDictionary["POBLAC_ID"],
                 PUEBLO = CommunityDataAsDictionary["PUEBLO"],
@@ -187,24 +189,25 @@ class DB2_Communities:
         selectQuery = select([self.Communities]).where(
                                                        and_(
                                                             self.Communities.c.POBLAC_ID==CommunityDataAsDictionary["POBLAC_ID"],
-                                                            self.Communities.c.PUEBLO==CommunityDataAsDictionary["PUEBLO"]
+                                                            self.Communities.c.PUEBLO==CommunityDataAsDictionary["PUEBLO"].replace("Ñ","\u00c3\u2018")
                                                             )
                                                        )
         resultsProxy = self.mainConnection.execute(selectQuery)
         community = resultsProxy.fetchone()
         if (community!=None):
             isCommunityInDB = True
-        return isCommunityInDB
+        return [isCommunityInDB,community[0]]
 
     def update_Community(self, CommunityDataAsDictionary):
         update = self.Communities.update().where(
                                                  and_(
                                                       self.Communities.c.POBLAC_ID==CommunityDataAsDictionary["POBLAC_ID"],
-                                                      self.Communities.c.PUEBLO==CommunityDataAsDictionary["PUEBLO"]
+                                                      self.Communities.c.PUEBLO==CommunityDataAsDictionary["PUEBLO"].replace("Ñ","\u00c3\u2018")
                                                       )
                                                  ).values(
                                                           POBLAC_ID = CommunityDataAsDictionary["POBLAC_ID"],
-                                                          PUEBLO = CommunityDataAsDictionary["PUEBLO"]
+                                                          PUEBLO = CommunityDataAsDictionary["PUEBLO"],
+                                                          RESILIENCIA = CommunityDataAsDictionary["RESILIENCIA"]
                                                           )
         update.compile().params
         result = self.mainConnection.execute(update)
@@ -214,7 +217,7 @@ class DB2_Communities:
         update = self.Communities.update().where(
                                                  and_(
                                                       self.Communities.c.POBLAC_ID==Poblac_ID,
-                                                      self.Communities.c.PUEBLO==Town
+                                                      self.Communities.c.PUEBLO==Town.replace("Ñ","\u00c3\u2018")
                                                       )
                                                  ).values(
                                                           RESILIENCIA = CommunityDataAsDictionary["RESILIENCIA"]
@@ -236,7 +239,7 @@ class DB2_Communities:
         Community = resultsProxy.fetchone()
         CommunityAsDictionary = dict(
             POBLAC_ID=Community[0],
-            PUEBLO=Community[1],
+            PUEBLO=Community[1].replace("\u00c3\u2018","Ñ"),
             RESILIENCIA=Community[2]
             )
         resultsProxy.close()
@@ -244,7 +247,7 @@ class DB2_Communities:
 
     def select_community_dictionary_by_state_city_and_name(self, State, City, CommunityName):
         TownsDB = DB2_Towns.getInstance()
-        Town = TownsDB.select_Town_dictionary_by_State_City_and_Name(State, City, CommunityName)
+        Town = TownsDB.select_Town_dictionary_by_State_City_and_Name(State, City.replace("Ñ","\u00c3\u2018"), CommunityName.replace("Ñ","\u00c3\u2018"))
         Community = self.select_community_Dictionary_by_Poblac_ID(Town['POBLAC_ID'])
         return Community
 
@@ -285,7 +288,7 @@ class DB2_Resilience_Steps:
         resultsProxy = self.mainConnection.execute(selectQuery)
         Resilience_steps = resultsProxy.fetchall()
         #Clean list to get rid of Stage id, titles, references, achievments
-        Resilience_steps = [[step[1],step[2],step[3]] for step in Resilience_steps if step[2]!=0] #Stage,step,detail
+        Resilience_steps = [[step[1].replace("\u00c3\u2018","Ñ"),step[2].replace("\u00c3\u2018","Ñ"),step[3].replace("\u00c3\u2018","Ñ")] for step in Resilience_steps if step[2]!=0] #Stage,step,detail
         resultsProxy.close()
         return Resilience_steps
 
@@ -295,21 +298,19 @@ class DB2_Resilience_Steps:
         selectQuery = select([self.Resiliencia]).where(self.Resiliencia.c.Paso==0)
         resultsProxy = self.mainConnection.execute(selectQuery)
         Stages = resultsProxy.fetchall()
-        Stages = [[stage[1],stage[3]] for stage in Stages] #stage number, stage name
+        Stages = [[stage[1].replace("\u00c3\u2018","Ñ"),stage[3].replace("\u00c3\u2018","Ñ")] for stage in Stages] #stage number, stage name
         resultsProxy.close()
         return Stages
 
 
 def main():
-    dbp = DB2_Resilience_Steps.getInstance()
-    stages = dbp.select_all_Stages()
-    resiliencia = dbp.select_all_Resilience_steps()
-    pprint(stages)
-    pprint(resiliencia)
-    #db = DB2_Communities()
-    #db.insert_Community(town)
-    #comunidad = db.select_community_dictionary_by_state_city_and_name("HEREDIA","SAN RAFAEL","CONCEPCION")
-    #print(comunidad)
+    db=DB2_Towns.getInstance()
+    TOWNS = db.select_all_Towns_by_State_and_City("HEREDIA","BARVA")
+    print(TOWNS)
+    TOWN=db.select_Town_dictionary_by_State_City_and_Name("HEREDIA","BARVA","SAN JOSE DE LA MONTAÑA")
+    print()
+    print(TOWN)
+
 
 if __name__=="__main__":
     main()
