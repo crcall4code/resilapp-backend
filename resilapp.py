@@ -1,9 +1,9 @@
-# coding=latin_1
+# -*- coding: latin_1 -*-
 from flask import Flask, render_template, request, jsonify
 import atexit
 import os
 import json
-from SQL_Database import DB2_Towns, DB2_Communities
+from SQL_Database import DB2_Towns, DB2_Communities, DB2_Resilience_Steps
 from Cloudant_DB import Cloudant_Communities
 
 app = Flask(__name__, static_url_path='')
@@ -18,27 +18,6 @@ cloudant_db = Cloudant_Communities()
 def root():
     return app.send_static_file('community-index.html')
 
-
-# /**
-#  * Endpoint to get a JSON array of all the communities in the database
-#  * REST API example:
-#  * <code>
-#  * GET http://localhost:8000/api/communities
-#  * </code>
-#  * @return An array of all the communities data
-#  */
-
-# /* Endpoint to add a new community to database.
-# * Send a POST request to localhost:8000/api/visitors with body
-# * {
-# *     "name": "Community Name",
-#       "ubication_x": Longitude_As_Number,
-#       "ubication_y": Latitude_As_Number,
-#       "province": Province or State,
-#       "city": City,
-#       "resilience": {Resilience_Object}
-# * }
-# */
 # /* A Resilience_Object will contain:
 #   {
 #       "resilience_level":Decimal_Number_From_Zero_To_One,
@@ -48,80 +27,41 @@ def root():
 #           "icon":"url_for_image"
 #   }
 #*/
-@app.route('/api/communities', methods=['POST', 'GET'])
-def communities():
+
+@app.route('/api/communities/<community_id>', methods=['GET'])
+def get_community_resilience(community):
+    communityResilience = cloudant_db.get_document_by_id(community_id) 
+    return jsonify(communityResilience)
+    
+@app.route('/api/communities/<province>/<city>/<town>', methods=['POST', 'GET'])
+def community_and_resilience(province, city, town):
     if request.method == 'GET':
-        if cloudant_db.client:
-            cloudant_db.db = "resilapp-communities"
-            return jsonify(list(map(lambda doc: doc, cloudant_db.db)))
-        else:
-            print('No database')
-            return jsonify([])
+        db_towns = DB2_Towns.getInstance()
+        db_communities = DB2_Communities.getInstance()
+        town = db_towns.select_Town_dictionary_by_State_City_and_Name(province, city, town)
+        community = db_communities.select_community_Dictionary_by_Poblac_ID(town['POBLAC_ID'])
+        print("COMUNIDAD:",community)
+        if community!=None:
+            resiliencia = cloudant_db.get_document_by_id(community['POBLAC_ID'])
+            print("RESILIENCIA:",resiliencia)
+            community['RESILIENCIA'] = resiliencia
+        return jsonify(community)
     elif request.method == 'POST':
-        name = request.json['name']
-        ubication_x = request.json['ubication_x']
-        ubication_y = request.json['ubication_y']
-        province = request.json['province']
-        city = request.json['city']
-        resilience = request.json['resilience']
-        data = {
-                'name':name,
-                'ubication_x':ubication_x,
-                'ubication_y':ubication_y,
-                'province':province,
-                'city':city,
-                'resilience':resilience
-                }
-        if cloudant_db.client:
-            cloudant_db.db = "resilapp-communities"
-            my_document = cloudant_db.db.create_document(data)
-            data['_id'] = my_document['_id']
-            return jsonify(data)
-        else:
-            print('No database')
-            return jsonify(data)
-
-
-@app.route('/api/communities/<community>', methods=['GET'])
-def get_community(community):
-    if cloudant_db.client:
-        cloudant_db.db = "resilapp-communities"
-        community_list = list(map(lambda doc:(doc if doc['name']==community else None), cloudant_db.db))
-        community_list = [i for i in community_list if i!=None]
-        return jsonify(community_list)
-    else:
-        print('No database')
-        return jsonify([])
-
-
-@app.route('/api/communities/<province>/<city>/<town>', methods=['POST'])
-def put_community(province, city, town):
-    db_towns = DB2_Towns.getInstance()
-    db_communities = DB2_Communities.getInstance()
-    town = db_towns.select_Town_dictionary_by_State_City_and_Name(province, city, town)
-    POBLAC_ID = town["POBLAC_ID"]
-    PUEBLO = "{},{},{}".format(town["PUEBLO"],town["CANTON"],town["PROVINCIA"])
-    RESILIENCIA = request.json['RESILIENCIA']
-    data = {
-            'POBLAC_ID':POBLAC_ID,
-            'PUEBLO':PUEBLO,
-            'RESILIENCIA':RESILIENCIA
-            }
-    if cloudant_db.client:
-        cloudant_db.db_name = 'resilapp-communities-badges'
-        cloudant_db.db = client.create_database(cloudant_db.db_name, throw_on_exists=False)
-        my_document = cloudant_db.db.create_document(data)
-        data['_id'] = my_document['_id']
-        community = list(map(lambda doc:(doc if doc['POBLAC_ID']==POBLAC_ID else None), cloudant_db.db))
-        community = [i for i in community if i!=None]
-        community = community[0]
-        town['RESILIENCIA'] = dict(_id=community['_id'],_rev=community['_rev'])
-        db_communities.insert_Community(town)
-        return jsonify(data)
-    else:
-        print('No database')
-        return jsonify(data)
-
+        db_towns = DB2_Towns.getInstance()
+        db_communities = DB2_Communities.getInstance()
+        db_resilience_steps = DB2_Resilience_Steps.getInstance()
+        town = db_towns.select_Town_dictionary_by_State_City_and_Name(province, city, town)
+        community = dict(POBLAC_ID=town['POBLAC_ID'])
+        community['PUEBLO'] = "{},{},{}".format(town["PUEBLO"],town["CANTON"],town["PROVINCIA"])
+        db_communities.insert_Community(community)
+        resiliencia = request.json['RESILIENCIA']
+        stage = resiliencia['RESILIENCIA']['stage']
+        step = resiliencia['RESILIENCIA']['step']
+        total_and_stage_percentages = db_resilience_steps.get_accomplished_percentages_total_and_stage(stage, step)
+        resiliencia['resilience_stage_level'] = str(total_and_stage_percentages['Stage'])
+        resiliencia['resilience_total_level'] = str(total_and_stage_percentages['Total'])
+        save = cloudant_db.update_document_or_save_if_new(resiliencia)
+        return jsonify(save)
 
 @app.route('/api/towns/provinces', methods=['GET'])
 def get_provinces():
