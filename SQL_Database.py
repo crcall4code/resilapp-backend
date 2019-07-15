@@ -16,8 +16,8 @@ class DB2_Towns:
             raise Exception("This class is a singleton")
         else:
             DB2_Towns.__instance = self
-            self.username = "lfj47179"
-            self.password = "3hb62wh+7jtbb77n"
+            self.username = "mhg98374"
+            self.password = "b7gqx63^51fnrqvp"
             self.host = "dashdb-txn-sbox-yp-dal09-03.services.dal.bluemix.net"
             self.port = 50000
             self.schema = "BLUDB"#"LFJ47179"
@@ -176,8 +176,8 @@ class DB2_Communities:
             raise Exception("This class is a singleton")
         else:
             DB2_Communities.__instance = self
-            self.username = "lfj47179"
-            self.password = "3hb62wh+7jtbb77n"
+            self.username = "mhg98374"
+            self.password = "b7gqx63^51fnrqvp"
             self.host = "dashdb-txn-sbox-yp-dal09-03.services.dal.bluemix.net"
             self.port = 50000
             self.schema = "BLUDB"#"LFJ47179"
@@ -292,8 +292,8 @@ class DB2_Resilience_Steps:
             raise Exception("This class is a singleton")
         else:
             DB2_Resilience_Steps.__instance = self
-            self.username = "lfj47179"
-            self.password = "3hb62wh+7jtbb77n"
+            self.username = "mhg98374"
+            self.password = "b7gqx63^51fnrqvp"
             self.host = "dashdb-txn-sbox-yp-dal09-03.services.dal.bluemix.net"
             self.port = 50000
             self.schema = "BLUDB"#"LFJ47179"
