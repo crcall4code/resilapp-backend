@@ -1,9 +1,10 @@
 # -*- coding: latin_1 -*-
-from cloudant import Cloudant
-from json import dumps
-import os
+import fastjsonschema
 import json
+import os
 from pprint import pprint
+
+from cloudant import Cloudant
 
 
 class CloudantCommunities:
@@ -33,6 +34,72 @@ class CloudantCommunities:
                 self.url = 'https://' + self.creds['host']
                 self.client = Cloudant(self.user, self.password, url=self.url, connect=True)
                 self.db = self.client.create_database(self.db_name, throw_on_exists=False)
+
+    @staticmethod
+    def validate_resilience_object(resilience_object):
+        schema = {
+            "$schema": "http://json-schema.org/draft-04/schema#",
+            "type": "object",
+            "properties": {
+                "RESILIENCIA": {
+                    "type": "object",
+                    "properties": {
+                        "badges": {
+                            "type": "array",
+                            "items": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "badge_id": {
+                                            "type": "integer"
+                                        },
+                                        "description": {
+                                            "type": "string"
+                                        },
+                                        "date": {
+                                            "type": "string"
+                                        },
+                                        "type": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "badge_id",
+                                        "description",
+                                        "date",
+                                        "type"
+                                    ]
+                                }
+                            ]
+                        },
+                        "stage": {
+                            "type": "integer"
+                        },
+                        "step": {
+                            "type": "integer"
+                        },
+                        "resilience_stage_level": {
+                            "type": "number"
+                        },
+                        "resilience_total_level": {
+                            "type": "number"
+                        }
+                    },
+                    "required": [
+                        "badges",
+                        "stage",
+                        "step",
+                        "resilience_stage_level",
+                        "resilience_total_level"
+                    ]
+                }
+            },
+            "required": [
+                "RESILIENCIA"
+            ]
+        }
+        validate = fastjsonschema.compile(schema)
+        validate(resilience_object)
 
     def get_document_by_id(self, doc_id):
         doc = None

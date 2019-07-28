@@ -32,7 +32,8 @@
                     <th>Latitud</th>
                 </tr>
                 </tfoot>
-                <tbody>
+                <tbody id="towns_table">
+                <!--
                 <tr>
                     <td> </td>
                     <td> </td>
@@ -41,10 +42,23 @@
                     <td> </td>
                     <td> </td>
                 </tr>
+                -->
                 </tbody>
             </table>
         </div>
     </div>
+    <script>
+        function get_indicators() {
+            let indicators = $.get('./api/resilience/indicators');
+            for (let indicator = 0; indicator<indicators.length; ++indicator){
+                $('towns_table').append('<tr>');
+                for (let indicator_data = 0; indicator_data < indicators[indicator].length; ++indicator_data) {
+                    $('towns_table').append('<td>'+indicators[indicator][indicator_data]+'</td>');
+                }
+                $('towns_table').append('</tr>');
+            }
+        }
+    </script>
     <!-- Page level plugins -->
     <script src="vendor/datatables/jquery.dataTables.min.js"></script>
     <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>

@@ -1,13 +1,15 @@
 # -*- coding: latin_1 -*-
+import atexit
+import os
+
+from fastjsonschema import JsonSchemaDefinitionException, JsonSchemaException
 from flask import Flask, render_template, request, jsonify
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS, cross_origin
 from jinja2.exceptions import TemplateNotFound
-import atexit
-import os
-import json
-from SQL_Database import Db2Towns, Db2Communities, Db2ResilienceSteps
+
 from Cloudant_DB import CloudantCommunities
+from SQL_Database import Db2Towns, Db2Communities, Db2ResilienceSteps
 
 app = Flask(__name__, static_url_path='', template_folder='templates')
 Bootstrap(app)
@@ -60,15 +62,6 @@ def not_found(e):
 
 
 # ******************************* DATABASE FUNCTIONS ***************************************
-# /* A Resilience_Object will contain:
-#   {
-#       "resilience_level":Decimal_Number_From_Zero_To_One,
-#       "badges":[{             ------> This one is a list, containing one or several ResilienceBadge_Object(s)
-#           "title":"Beginner",
-#           "description":"First Badge",
-#           "icon":"url_for_image"
-#   }
-# */
 
 @app.route('/api/communities/<community_id>', methods=['GET'])
 @cross_origin()
@@ -97,19 +90,49 @@ def community_and_resilience(province, city, town):
         db_towns = Db2Towns.get_towns_instance()
         db_communities = Db2Communities.get_communities_instance()
         db_resilience_steps = Db2ResilienceSteps.get_resilience_instance()
+        # Get town from SQL database, to avoid saving non existent towns
         town = db_towns.select_town_dictionary_by_state_city_and_name(province, city, town)
+        # Create community SQL database object from town object
         community = dict(POBLAC_ID=town['POBLAC_ID'])
         community['PUEBLO'] = "{},{},{}".format(town["PUEBLO"], town["CANTON"], town["PROVINCIA"])
-        db_communities.insert_community(community)
-        resiliencia = request.json['RESILIENCIA']
-        stage = resiliencia['RESILIENCIA']['stage']
-        step = resiliencia['RESILIENCIA']['step']
-        total_and_stage_percentages = db_resilience_steps.get_accomplished_percentages_total_and_stage(stage, step)
-        resiliencia['resilience_stage_level'] = str(total_and_stage_percentages['Stage'])
-        resiliencia['resilience_total_level'] = str(total_and_stage_percentages['Total'])
-        save = cloudant_db.update_document_or_save_if_new(resiliencia)
-        return jsonify(save)
-
+        # Get object containing community resilience from request,
+        # the main key must be "RESILIENCIA"
+        resiliencia_from_request = request.json['RESILIENCIA']
+        # Subsequent keys:
+        #   POBLAC_ID (from database query above)
+        #   PUEBLO (concatenation, from database query above)
+        #   RESILIENCIA(
+        #               badges[(
+        #                      badge_id,
+        #                      description,
+        #                      date,
+        #                      type:step/badge
+        #                      )];
+        #               current_stage;
+        #               current_step;
+        #               resilience_stage_level(%);
+        #               resilience_total_level(%)
+        #               )
+        # ******************************************
+        try:
+            cloudant_db.validate_resilience_object(resiliencia_from_request['RESILIENCIA'])
+            # Save/Update community in SQL database
+            db_communities.insert_community(community)
+            # Save/Update community in Document database
+            resiliencia_for_community = dict(
+                POBLAC_ID = community['POBLAC_ID'],
+                PUEBLO = community['PUEBLO'],
+                RESILIENCIA = resiliencia_from_request
+            )
+            if resiliencia_from_request['_rev']:
+                resiliencia_for_community['_rev'] = resiliencia_from_request['_rev']
+                resiliencia_for_community['_id'] = resiliencia_from_request['_id']
+            document_save = cloudant_db.update_document_or_save_if_new(resiliencia_for_community)
+            return jsonify(document_save)
+        except JsonSchemaDefinitionException:
+            return jsonify(dict(Error="Bad JSON definition"))
+        except JsonSchemaException:
+            return jsonify(dict(Error="JSON not following definition"))
 
 @app.route('/api/towns/provinces', methods=['GET'])
 @cross_origin()
@@ -187,7 +210,7 @@ def get_steps_count():
     steps_count = db.count_resilience_steps()
     if not steps_count:
         steps_count.append("Error in database.")
-    steps_count = dict(Steps_count=str(steps_count))
+    steps_count = dict(Steps_count=int(steps_count))
     return jsonify(steps_count)
 
 # Number of resilience steps within a given resilience stage
@@ -198,7 +221,7 @@ def get_steps_count_within_stage(stage):
     steps_count_within_stage = db.count_resilience_steps_within_stage(stage)
     if not steps_count_within_stage:
         steps_count_within_stage.append("Error in database.")
-    steps_count_within_stage = dict(Steps_count_within_stage=str(steps_count_within_stage))
+    steps_count_within_stage = dict(Steps_count_within_stage=int(steps_count_within_stage))
     return jsonify(steps_count_within_stage)
 
 # Number of total accomplished resilience steps, this doesn't count the current one
@@ -209,7 +232,7 @@ def get_total_accomplished_steps(current_stage, current_step):
     total_accomplished_steps = db.count_accomplished_resilience_steps(current_stage, current_step)
     if not total_accomplished_steps:
         total_accomplished_steps.append("Error in database.")
-    total_accomplished_steps = dict(Total_accomplished_steps = str(total_accomplished_steps))
+    total_accomplished_steps = dict(Total_accomplished_steps = int(total_accomplished_steps))
     return jsonify(total_accomplished_steps)
 
 # Number of accomplished resilience steps within a given resilience stage, this doesn't count the current one
@@ -220,7 +243,7 @@ def get_accomplished_steps_within_stage(current_stage, current_step):
     accomplished_steps_within_stage = db.count_accomplished_resilience_steps_within_stage(current_stage, current_step)
     if not accomplished_steps_within_stage:
         accomplished_steps_within_stage.append("Error in database.")
-    accomplished_steps_within_stage = dict(Accomplished_steps_within_stage=str(accomplished_steps_within_stage))
+    accomplished_steps_within_stage = dict(Accomplished_steps_within_stage=int(accomplished_steps_within_stage))
     return jsonify(accomplished_steps_within_stage)
 
 # Percentages of accomplished resilience steps, total and within stage, this doesn't count the current step
@@ -232,8 +255,8 @@ def get_accomplished_percentages(current_stage, current_step):
     if not accomplished_percentages:
         accomplished_percentages.append("Error in database.")
     else:
-        accomplished_percentages['Total'] = str(accomplished_percentages['Total'])
-        accomplished_percentages['Stage'] = str(accomplished_percentages['Stage'])
+        accomplished_percentages['Total'] = float(accomplished_percentages['Total'])
+        accomplished_percentages['Stage'] = float(accomplished_percentages['Stage'])
     return jsonify(accomplished_percentages)
 # ************************** END OF DATABASE FUNCTIONS ***************************
 

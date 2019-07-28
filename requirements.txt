@@ -16,3 +16,4 @@ ibm_db==3.0.1
 ibm-db-sa==0.3.5
 Flask-Bootstrap==3.3.7.1
 Flask-Cors==3.0.8
+fastjsonschema==2.13
