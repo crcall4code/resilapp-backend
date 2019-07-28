@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+    {% block title %}
+        Index
+    {% endblock %}
+    {% block head %}
+        {{ super() }}
+        <style>
+
+        </style>
+    {% endblock %}
+    {% block body %}
+        <!-- Begin Page Content -->
+        <div class="container-fluid">
+          <!-- 404 Error Text -->
+          <div class="text-center">
+            <div class="error mx-auto bg-warning" data-text="404">404</div>
+            <p class="lead text-gray-800 mb-5">La página o recurso consultado no se ha encontrado</p>
+            <a href="./">&larr; Regrese al inicio</a>
+          </div>
+        </div>
+        <!-- /.container-fluid -->
+    {% endblock %}

@@ -1,416 +1,428 @@
 # -*- coding: latin_1 -*-
-from sqlalchemy import Text, Float, Integer, MetaData, create_engine, Table, Column, insert, select, and_, distinct, update
+from sqlalchemy import Text, Float, Integer, MetaData, create_engine, Table, Column, insert, select, and_, distinct, \
+    update
 from sqlalchemy.sql import func
 from json import dumps
 from pprint import pprint
 
-class DB2_Towns:
+
+class Db2Towns:
     __instance = None
+
     @staticmethod
-    def getInstance():
-        if DB2_Towns.__instance == None:
-            DB2_Towns()
-        return DB2_Towns.__instance
+    def get_towns_instance():
+        if Db2Towns.__instance is None:
+            Db2Towns()
+        return Db2Towns.__instance
+
     def __init__(self):
-        if DB2_Towns.__instance != None:
+        if Db2Towns.__instance is not None:
             raise Exception("This class is a singleton")
         else:
-            DB2_Towns.__instance = self
+            Db2Towns.__instance = self
             self.username = "mhg98374"
             self.password = "b7gqx63^51fnrqvp"
             self.host = "dashdb-txn-sbox-yp-dal09-03.services.dal.bluemix.net"
             self.port = 50000
-            self.schema = "BLUDB"#"LFJ47179"
-            self.db2ConnectionString = "db2+ibm_db://{}:{}@{}:{}/{}".format(self.username, self.password, self.host, self.port, self.schema)
-            self.engine = create_engine(self.db2ConnectionString,pool_size=1, max_overflow=0)
+            self.schema = "BLUDB"  # "LFJ47179"
+            self.db2ConnectionString = "db2+ibm_db://{}:{}@{}:{}/{}".format(self.username, self.password, self.host,
+                                                                            self.port, self.schema)
+            self.engine = create_engine(self.db2ConnectionString, pool_size=1, max_overflow=0)
             self.mainConnection = self.engine.connect()
             self.metadata = MetaData()
             self.Towns = Table('POBLADOS', self.metadata,
-                                    Column('OBJECTID', Integer(), nullable=False, unique=True, primary_key=True),
-                                    Column('POBLAC_ID', Integer(), nullable=False),
-                                    Column('PROVINCIA', Text(), nullable=False),
-                                    Column('CANTON', Text(), nullable=False),
-                                    Column('PUEBLO', Text(), nullable=False),
-                                    Column('X_COORDENATES', Float(), nullable=False),
-                                    Column('Y_COORDENATES', Float(), nullable=False)
-                                    )
+                               Column('OBJECTID', Integer(), nullable=False, unique=True, primary_key=True),
+                               Column('POBLAC_ID', Integer(), nullable=False),
+                               Column('PROVINCIA', Text(), nullable=False),
+                               Column('CANTON', Text(), nullable=False),
+                               Column('PUEBLO', Text(), nullable=False),
+                               Column('X_COORDENATES', Float(), nullable=False),
+                               Column('Y_COORDENATES', Float(), nullable=False)
+                               )
 
-
-    def select_all_Towns(self):
-        selectQuery = select([self.Towns])
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        TownsNames = []
-        results = resultsProxy.fetchall()
+    def select_all_towns(self):
+        select_query = select([self.Towns])
+        results_proxy = self.mainConnection.execute(select_query)
+        towns_names = []
+        results = results_proxy.fetchall()
         for row in results:
-            #Town_City_State = "({},{},{})".format(row[4].replace("\u00c3\u2018","Ñ"),row[3].replace("\u00c3\u2018","Ñ"),row[2])
-            #Town_City_State = "({},{},{})".format(row[4].replace("Ã‘","Ñ"),row[3].replace("Ã‘","Ñ"),row[2])
-            Town_City_State = "({},{},{})".format(row[4],row[3],row[2])
-            TownsNames.append(Town_City_State)
-        resultsProxy.close()
-        return TownsNames
+            # town_city_state = "({},{},{})".format(row[4].replace("\u00c3\u2018","Ñ"),row[3].replace
+            # ("\u00c3\u2018","Ñ"),row[2])
+            # town_city_state = "({},{},{})".format(row[4].replace("Ã‘","Ñ"),row[3].replace("Ã‘","Ñ"),row[2])
+            town_city_state = "({},{},{})".format(row[4], row[3], row[2])
+            towns_names.append(town_city_state)
+        results_proxy.close()
+        return towns_names
 
+    def select_all_states(self):
+        select_query = select([self.Towns.c.PROVINCIA]).distinct()
+        results_proxy = self.mainConnection.execute(select_query)
+        states = results_proxy.fetchall()
+        states = [state[0] for state in states]
+        results_proxy.close()
+        return states
 
-    def select_all_States(self):
-        selectQuery = select([self.Towns.c.PROVINCIA]).distinct()
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        States = resultsProxy.fetchall()
-        States = [state[0] for state in States]
-        resultsProxy.close()
-        return States
+    def select_all_cities_by_state(self, State):
+        select_query = select([self.Towns.c.CANTON]).distinct().where(self.Towns.c.PROVINCIA == State)
+        print(select_query)
+        results_proxy = self.mainConnection.execute(select_query)
+        cities = results_proxy.fetchall()
+        # cities = [city[0].replace("\u00c3\u2018","Ñ") for city in cities]
+        # cities = [city[0].replace("Ã‘","Ñ") for city in cities]
+        cities = [city[0] for city in cities]
+        results_proxy.close()
+        return cities
 
+    def select_all_towns_by_state_and_city(self, State, City):
+        select_query = select([self.Towns.c.PUEBLO]).where(
+            and_(
+                self.Towns.c.PROVINCIA == State,
+                # self.towns.c.CANTON==city.replace("Ñ","\u00c3\u2018")
+                # self.towns.c.CANTON==city.replace("Ñ","Ã‘")
+                self.Towns.c.CANTON == City
+            )
+        )
+        results_proxy = self.mainConnection.execute(select_query)
+        towns = results_proxy.fetchall()
+        # towns = [town[0].replace("\u00c3\u2018","Ñ") for town in towns]
+        # towns = [town[0].replace("Ã‘","Ñ") for town in towns]
+        towns = [town[0] for town in towns]
+        results_proxy.close()
+        return towns
 
-    def select_all_Cities_by_State(self, State):
-        selectQuery = select([self.Towns.c.CANTON]).distinct().where(self.Towns.c.PROVINCIA==State)
-        print(selectQuery)
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        Cities = resultsProxy.fetchall()
-        #Cities = [city[0].replace("\u00c3\u2018","Ñ") for city in Cities]
-        #Cities = [city[0].replace("Ã‘","Ñ") for city in Cities]
-        Cities = [city[0] for city in Cities]
-        resultsProxy.close()
-        return Cities
-
-
-    def select_all_Towns_by_State_and_City(self, State, City):
-        selectQuery = select([self.Towns.c.PUEBLO]).where(
-                                                            and_(
-                                                                self.Towns.c.PROVINCIA==State,
-                                                                #self.Towns.c.CANTON==City.replace("Ñ","\u00c3\u2018")
-                                                                #self.Towns.c.CANTON==City.replace("Ñ","Ã‘")
-                                                                self.Towns.c.CANTON==City
-                                                                )
-                                                            )
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        Towns = resultsProxy.fetchall()
-        #Towns = [town[0].replace("\u00c3\u2018","Ñ") for town in Towns]
-        #Towns = [town[0].replace("Ã‘","Ñ") for town in Towns]
-        Towns = [town[0] for town in Towns]
-        resultsProxy.close()
-        return Towns
-
-
-    def select_Towns_dictionaries_by_State(self, State):
-        selectQuery = select([self.Towns]).where(self.Towns.c.PROVINCIA==State)
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        Towns = resultsProxy.fetchall()
-        TownsList = []
-        for Town in Towns:
-            TownAsDictionary = dict(
-                #CANTON=Town[3].replace("\u00c3\u2018","Ñ"),
-                #PUEBLO=Town[4].replace("\u00c3\u2018","Ñ")
-                #CANTON=Town[3].replace("Ã‘","Ñ"),
-                #PUEBLO=Town[4].replace("Ã‘","Ñ")
+    def select_towns_dictionaries_by_state(self, State):
+        select_query = select([self.Towns]).where(self.Towns.c.PROVINCIA == State)
+        results_proxy = self.mainConnection.execute(select_query)
+        towns = results_proxy.fetchall()
+        towns_list = []
+        for Town in towns:
+            town_as_dictionary = dict(
+                # CANTON=Town[3].replace("\u00c3\u2018","Ñ"),
+                # PUEBLO=Town[4].replace("\u00c3\u2018","Ñ")
+                # CANTON=Town[3].replace("Ã‘","Ñ"),
+                # PUEBLO=Town[4].replace("Ã‘","Ñ")
                 CANTON=Town[3],
                 PUEBLO=Town[4]
-                )
-            TownsList.append(TownAsDictionary)
-        resultsProxy.close()
-        return TownsList
+            )
+            towns_list.append(town_as_dictionary)
+        results_proxy.close()
+        return towns_list
 
-
-    def select_Towns_dictionaries_by_State_and_City(self, State, City):
-        selectQuery = select([self.Towns]).where(
-                        and_(
-                            self.Towns.c.PROVINCIA==State,
-                            #self.Towns.c.CANTON==City.replace("Ñ","\u00c3\u2018")
-                            #self.Towns.c.CANTON==City.replace("Ñ","Ã‘")
-                            self.Towns.c.CANTON==City
-                            )
-                        )
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        Towns = resultsProxy.fetchall()
-        TownsList = []
-        for Town in Towns:
-            TownAsDictionary = dict(
-                #PUEBLO=Town[4].replace("\u00c3\u2018","Ñ")
-                #PUEBLO=Town[4].replace("Ã‘","Ñ")
+    def select_towns_dictionaries_by_state_and_city(self, State, City):
+        select_query = select([self.Towns]).where(
+            and_(
+                self.Towns.c.PROVINCIA == State,
+                # self.Towns.c.CANTON==city.replace("Ñ","\u00c3\u2018")
+                # self.Towns.c.CANTON==city.replace("Ñ","Ã‘")
+                self.Towns.c.CANTON == City
+            )
+        )
+        results_proxy = self.mainConnection.execute(select_query)
+        towns = results_proxy.fetchall()
+        towns_list = []
+        for Town in towns:
+            town_as_dictionary = dict(
+                # PUEBLO=Town[4].replace("\u00c3\u2018","Ñ")
+                # PUEBLO=Town[4].replace("Ã‘","Ñ")
                 PUEBLO=Town[4]
-                )
-            TownsList.append(TownAsDictionary)
-        resultsProxy.close()
-        return TownsList
+            )
+            towns_list.append(town_as_dictionary)
+        results_proxy.close()
+        return towns_list
 
-
-    def select_Town_dictionary_by_State_City_and_Name(self, State, City, Town):
-        selectQuery = select([self.Towns]).where(
-                        and_(
-                            self.Towns.c.PROVINCIA==State,
-                            #self.Towns.c.CANTON==City.replace("Ñ","\u00c3\u2018"),
-                            #self.Towns.c.PUEBLO==Town.replace("Ñ","\u00c3\u2018")
-                            #self.Towns.c.CANTON==City.replace("Ñ","Ã‘"),
-                            #self.Towns.c.PUEBLO==Town.replace("Ñ","Ã‘")
-                            self.Towns.c.CANTON==City,
-                            self.Towns.c.PUEBLO==Town
-                            )
-                        )
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        Town = resultsProxy.fetchone()
-        if Town!= None:
-            TownAsDictionary = dict(
-                ID=Town[0],
-                POBLAC_ID=Town[1],
-                PROVINCIA=Town[2],
-                #CANTON=Town[3].replace("\u00c3\u2018","Ñ"),
-                #PUEBLO=Town[4].replace("\u00c3\u2018","Ñ"),
-                #CANTON=Town[3].replace("Ã‘","Ñ"),
-                #PUEBLO=Town[4].replace("Ã‘","Ñ"),
-                CANTON=Town[3],
-                PUEBLO=Town[4],
-                X_COORDENATES=Town[5],
-                Y_COORDENATES=Town[6]
-                )
+    def select_town_dictionary_by_state_city_and_name(self, state, city, town):
+        select_query = select([self.Towns]).where(
+            and_(
+                self.Towns.c.PROVINCIA == state,
+                # self.Towns.c.CANTON==city.replace("Ñ","\u00c3\u2018"),
+                # self.Towns.c.PUEBLO==town.replace("Ñ","\u00c3\u2018")
+                # self.Towns.c.CANTON==city.replace("Ñ","Ã‘"),
+                # self.Towns.c.PUEBLO==town.replace("Ñ","Ã‘")
+                self.Towns.c.CANTON == city,
+                self.Towns.c.PUEBLO == town
+            )
+        )
+        results_proxy = self.mainConnection.execute(select_query)
+        town = results_proxy.fetchone()
+        if town is not None:
+            town_as_dictionary = dict(
+                ID=town[0],
+                POBLAC_ID=town[1],
+                PROVINCIA=town[2],
+                # CANTON=town[3].replace("\u00c3\u2018","Ñ"),
+                # PUEBLO=town[4].replace("\u00c3\u2018","Ñ"),
+                # CANTON=town[3].replace("Ã‘","Ñ"),
+                # PUEBLO=town[4].replace("Ã‘","Ñ"),
+                CANTON=town[3],
+                PUEBLO=town[4],
+                X_COORDENATES=town[5],
+                Y_COORDENATES=town[6]
+            )
         else:
-            TownAsDictionary=dict(Data="Town not found.")
-        resultsProxy.close()
-        return TownAsDictionary
+            town_as_dictionary = dict(Data="Town not found.")
+        results_proxy.close()
+        return town_as_dictionary
 
-class DB2_Communities:
+
+class Db2Communities:
     __instance = None
+
     @staticmethod
-    def getInstance():
-        if DB2_Communities.__instance == None:
-            DB2_Communities()
-        return DB2_Communities.__instance
+    def get_communities_instance():
+        if Db2Communities.__instance is None:
+            Db2Communities()
+        return Db2Communities.__instance
+
     def __init__(self):
-        if DB2_Communities.__instance != None:
+        if Db2Communities.__instance is not None:
             raise Exception("This class is a singleton")
         else:
-            DB2_Communities.__instance = self
+            Db2Communities.__instance = self
             self.username = "mhg98374"
             self.password = "b7gqx63^51fnrqvp"
             self.host = "dashdb-txn-sbox-yp-dal09-03.services.dal.bluemix.net"
             self.port = 50000
-            self.schema = "BLUDB"#"LFJ47179"
-            self.db2ConnectionString = "db2+ibm_db://{}:{}@{}:{}/{}".format(self.username, self.password, self.host, self.port, self.schema)
-            self.engine = create_engine(self.db2ConnectionString,pool_size=1, max_overflow=0)
+            self.schema = "BLUDB"  # "LFJ47179"
+            self.db2ConnectionString = "db2+ibm_db://{}:{}@{}:{}/{}".format(self.username, self.password, self.host,
+                                                                            self.port, self.schema)
+            self.engine = create_engine(self.db2ConnectionString, pool_size=1, max_overflow=0)
             self.mainConnection = self.engine.connect()
             self.metadata = MetaData()
             self.Communities = Table('COMMUNITIES', self.metadata,
-                                    Column('POBLAC_ID', Integer(), nullable=False),
-                                    Column('PUEBLO', Text(), nullable=False),
-                                    Column('RESILIENCIA', Text(), nullable=False)
-                                    )
+                                     Column('POBLAC_ID', Integer(), nullable=False),
+                                     Column('PUEBLO', Text(), nullable=False),
+                                     Column('VER', Text(), nullable=True)
+                                     )
 
-
-    def insert_Community(self, CommunityDataAsDictionary):
-        if (self.is_community_in_database(CommunityDataAsDictionary)[0]==False):
-            insert = self.Communities.insert().values(
-                POBLAC_ID = CommunityDataAsDictionary["POBLAC_ID"],
-                PUEBLO = CommunityDataAsDictionary["PUEBLO"]
+    def insert_community(self, community_data_as_dictionary):
+        if not self.is_community_in_database(community_data_as_dictionary)[0]:
+            insert_statement = self.Communities.insert().values(
+                POBLAC_ID=community_data_as_dictionary["POBLAC_ID"],
+                PUEBLO=community_data_as_dictionary["PUEBLO"]
             )
-            insert.compile().params
-            result = self.mainConnection.execute(insert)
-            insertMessage = "Community added to database."
+            insert_statement.compile().params
+            result = self.mainConnection.execute(insert_statement)
+            insert_message = "Community added to database."
         else:
-            self.update_Community(CommunityDataAsDictionary)
-            insertMessage = "Community in database updated."
-        return insertMessage
+            self.update_community(community_data_as_dictionary)
+            insert_message = "Community in database updated."
+        return insert_message
 
-
-    def is_community_in_database(self, CommunityDataAsDictionary):
-        isCommunityInDB = False
+    def is_community_in_database(self, community_data_as_dictionary):
+        is_community_in_db = False
         community = None
-        response = [isCommunityInDB,community]
-        selectQuery = select([self.Communities]).where(self.Communities.c.POBLAC_ID==CommunityDataAsDictionary["POBLAC_ID"])
-                                                       #and_(
-                                                            #self.Communities.c.PUEBLO==CommunityDataAsDictionary["PUEBLO"].replace("Ñ","\u00c3\u2018")
-                                                            #self.Communities.c.PUEBLO==CommunityDataAsDictionary["PUEBLO"].replace("Ñ","Ã‘")
-                                                            #self.Communities.c.PUEBLO==CommunityDataAsDictionary["PUEBLO"]
-                                                            #)
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        community = resultsProxy.fetchone()
-        if (community!=None):
-            isCommunityInDB = True
-            response = [isCommunityInDB,community[0]]
+        response = [is_community_in_db, community]
+        select_query = select([self.Communities]).where(
+            self.Communities.c.POBLAC_ID == community_data_as_dictionary["POBLAC_ID"])
+        # and_(
+        # self.Communities.c.PUEBLO==community_data_as_dictionary["PUEBLO"].replace("Ñ","\u00c3\u2018")
+        # self.Communities.c.PUEBLO==community_data_as_dictionary["PUEBLO"].replace("Ñ","Ã‘")
+        # self.Communities.c.PUEBLO==community_data_as_dictionary["PUEBLO"]
+        # )
+        results_proxy = self.mainConnection.execute(select_query)
+        community = results_proxy.fetchone()
+        if community is not None:
+            is_community_in_db = True
+            response = [is_community_in_db, community[0]]
         return response
 
+    def update_community(self, CommunityDataAsDictionary):
+        update_statement = self.Communities.update().where(
+            self.Communities.c.POBLAC_ID == CommunityDataAsDictionary["POBLAC_ID"]).values(
+            POBLAC_ID=CommunityDataAsDictionary["POBLAC_ID"],
+            PUEBLO=CommunityDataAsDictionary["PUEBLO"]
+        )
+        # and_(
+        # self.Communities.c.PUEBLO==community_data_as_dictionary["PUEBLO"].replace("Ñ","\u00c3\u2018")
+        # self.Communities.c.PUEBLO==community_data_as_dictionary["PUEBLO"].replace("Ñ","Ã‘")
+        # self.Communities.c.PUEBLO==community_data_as_dictionary["PUEBLO"]
+        # )
+        update_statement.compile().params
+        result = self.mainConnection.execute(update_statement)
 
-    def update_Community(self, CommunityDataAsDictionary):
-        update = self.Communities.update().where(self.Communities.c.POBLAC_ID==CommunityDataAsDictionary["POBLAC_ID"]).values(
-        																													POBLAC_ID = CommunityDataAsDictionary["POBLAC_ID"],
-                                                          																	PUEBLO = CommunityDataAsDictionary["PUEBLO"]
-																	                                                        )
-                                                 #and_(
-                                                      #self.Communities.c.PUEBLO==CommunityDataAsDictionary["PUEBLO"].replace("Ñ","\u00c3\u2018")
-                                                      #self.Communities.c.PUEBLO==CommunityDataAsDictionary["PUEBLO"].replace("Ñ","Ã‘")
-                                                      #self.Communities.c.PUEBLO==CommunityDataAsDictionary["PUEBLO"]
-                                                      #)
-        update.compile().params
-        result = self.mainConnection.execute(update)
+    def select_community_by_poblac_id(self, poblac_id):
+        select_query = select([self.Communities]).where(self.Communities.c.POBLAC_ID == poblac_id)
+        results_proxy = self.mainConnection.execute(select_query)
+        community = results_proxy.fetchone()
+        results_proxy.close()
+        return community  # tuple
 
+    def select_community_dictionary_by_poblac_id(self, poblac_id):
+        select_query = select([self.Communities]).where(self.Communities.c.POBLAC_ID == poblac_id)
+        results_proxy = self.mainConnection.execute(select_query)
+        community = results_proxy.fetchone()
+        community_as_dictionary = dict(
+            POBLAC_ID=community[0],
+            # PUEBLO=community[1].replace("\u00c3\u2018","Ñ"),
+            # PUEBLO=community[1].replace("Ã‘","Ñ"),
+            PUEBLO=community[1],
+            RESILIENCIA=community[2]
+        )
+        results_proxy.close()
+        return community_as_dictionary
 
-    def set_Community_Resilience(self, CommunityDataAsDictionary):
-        update = self.Communities.update().where().values(RESILIENCIA = CommunityDataAsDictionary["RESILIENCIA"])
-                                                 #and_(
-                                                      #self.Communities.c.PUEBLO==Town.replace("Ñ","\u00c3\u2018")
-                                                      #self.Communities.c.PUEBLO==Town.replace("Ñ","Ã‘")
-                                                      #self.Communities.c.PUEBLO==Town
-                                                      #)   
-        update.compile().params
-        result = self.mainConnection.execute(update)
-
-
-    def select_community_by_Poblac_ID(self, Poblac_ID):
-        selectQuery = select([self.Communities]).where(self.Communities.c.POBLAC_ID==Poblac_ID)
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        community = resultsProxy.fetchone()
-        resultsProxy.close()
-        return community #tuple
-
-    def select_community_Dictionary_by_Poblac_ID(self, Poblac_ID):
-        selectQuery = select([self.Communities]).where(self.Communities.c.POBLAC_ID==Poblac_ID)
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        Community = resultsProxy.fetchone()
-        CommunityAsDictionary = dict(
-            POBLAC_ID=Community[0],
-            #PUEBLO=Community[1].replace("\u00c3\u2018","Ñ"),
-            #PUEBLO=Community[1].replace("Ã‘","Ñ"),
-            PUEBLO=Community[1],
-            RESILIENCIA=Community[2]
-            )
-        resultsProxy.close()
-        return CommunityAsDictionary
-
-    def select_community_dictionary_by_state_city_and_name(self, State, City, CommunityName):
-        TownsDB = DB2_Towns.getInstance()
-        #Town = TownsDB.select_Town_dictionary_by_State_City_and_Name(State, City.replace("Ñ","\u00c3\u2018"), CommunityName.replace("Ñ","\u00c3\u2018"))
-        #Town = TownsDB.select_Town_dictionary_by_State_City_and_Name(State, City.replace("Ñ","Ã‘"), CommunityName.replace("Ñ","Ã‘"))
-        Town = TownsDB.select_Town_dictionary_by_State_City_and_Name(State, City, CommunityName)
-        Community = self.select_community_Dictionary_by_Poblac_ID(Town['POBLAC_ID'])
-        return Community
+    def select_community_dictionary_by_state_city_and_name(self, state, city, community_name):
+        towns_db = Db2Towns.get_towns_instance()
+        # Town = towns_db.select_town_dictionary_by_state_city_and_name(state, city.replace("Ñ","\u00c3\u2018"),
+        # community_name.replace("Ñ","\u00c3\u2018"))
+        # Town = towns_db.select_town_dictionary_by_state_city_and_name(state, city.replace("Ñ","Ã‘"),
+        # community_name.replace("Ñ","Ã‘"))
+        town = towns_db.select_Town_dictionary_by_State_City_and_Name(state, city, community_name)
+        community = self.select_community_dictionary_by_poblac_id(town['POBLAC_ID'])
+        return community
 
 
-class DB2_Resilience_Steps:
+class Db2ResilienceSteps:
     __instance = None
+
     @staticmethod
-    def getInstance():
-        if DB2_Resilience_Steps.__instance == None:
-            DB2_Resilience_Steps()
-        return DB2_Resilience_Steps.__instance
+    def get_resilience_instance():
+        if Db2ResilienceSteps.__instance is None:
+            Db2ResilienceSteps()
+        return Db2ResilienceSteps.__instance
+
     def __init__(self):
-        if DB2_Resilience_Steps.__instance != None:
+        if Db2ResilienceSteps.__instance is not None:
             raise Exception("This class is a singleton")
         else:
-            DB2_Resilience_Steps.__instance = self
+            Db2ResilienceSteps.__instance = self
             self.username = "mhg98374"
             self.password = "b7gqx63^51fnrqvp"
             self.host = "dashdb-txn-sbox-yp-dal09-03.services.dal.bluemix.net"
             self.port = 50000
-            self.schema = "BLUDB"#"LFJ47179"
-            self.db2ConnectionString = "db2+ibm_db://{}:{}@{}:{}/{}".format(self.username, self.password, self.host, self.port, self.schema)
-            self.engine = create_engine(self.db2ConnectionString,pool_size=1, max_overflow=0)
+            self.schema = "BLUDB"  # "LFJ47179"
+            self.db2ConnectionString = "db2+ibm_db://{}:{}@{}:{}/{}".format(self.username, self.password, self.host,
+                                                                            self.port, self.schema)
+            self.engine = create_engine(self.db2ConnectionString, pool_size=1, max_overflow=0)
             self.mainConnection = self.engine.connect()
             self.metadata = MetaData()
             self.Resiliencia = Table('RESILIENCIA-PASOS', self.metadata,
-                                    Column('ID', Integer(), nullable=False, unique=True, primary_key=True),
-                                    Column('Etapa', Integer(), nullable=False),
-                                    Column('Paso', Integer(), nullable=False),
-                                    Column('Detalle', Text(), nullable=False),
-                                    Column('Referencia', Text(), nullable=True),
-                                    Column('Logros', Text(), nullable=True),
-                                    )
+                                     Column('ID', Integer(), nullable=False, unique=True, primary_key=True),
+                                     Column('Etapa', Integer(), nullable=False),
+                                     Column('Paso', Integer(), nullable=False),
+                                     Column('Detalle', Text(), nullable=False),
+                                     Column('Referencia', Text(), nullable=True),
+                                     Column('INDICADOR', Text(), nullable=True),
+                                     Column('VERIFICADOR', Text(), nullable=True),
+                                     Column('DESCRIPCION', Text(), nullable=True)
+                                     )
 
+    def select_all_resilience_steps(self):
+        select_query = select([self.Resiliencia]).order_by(
+                                                            self.Resiliencia.c.Etapa.asc()
+                                                            )
+        results_proxy = self.mainConnection.execute(select_query)
+        resilience_steps = results_proxy.fetchall()
+        # Clean list to get rid of Stage id, titles, references, achievments
+        # Stage,step,detail
+        resilience_steps = [[step[1], step[2], step[3]] for step in resilience_steps if
+                            step[2] != 0]  # Stage,step,detail
+        results_proxy.close()
+        return resilience_steps
 
-    def select_all_Resilience_steps(self):
-        selectQuery = select([self.Resiliencia])
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        Resilience_steps = resultsProxy.fetchall()
-        #Clean list to get rid of Stage id, titles, references, achievments
-        #Resilience_steps = [[step[1].replace("\u00c3\u2018","Ñ"),step[2].replace("\u00c3\u2018","Ñ"),step[3].replace("\u00c3\u2018","Ñ")] for step in Resilience_steps if step[2]!=0] #Stage,step,detail
-        #Resilience_steps = [[step[1].replace("Ã‘","Ñ"),step[2].replace("Ã‘","Ñ"),step[3].replace("Ã‘","Ñ")] for step in Resilience_steps if step[2]!=0] #Stage,step,detail
-        Resilience_steps = [[step[1],step[2],step[3]] for step in Resilience_steps if step[2]!=0] #Stage,step,detail
-        resultsProxy.close()
-        return Resilience_steps
+    def select_all_stages(self):
+        # Query only registers where Step equals zero --> step zero equals stage title
+        select_query = select([self.Resiliencia]).where(self.Resiliencia.c.Paso == 0)
+        results_proxy = self.mainConnection.execute(select_query)
+        stages = results_proxy.fetchall()
+        # stages = [[stage[1].replace("\u00c3\u2018","Ñ"),stage[3].replace(
+        # "\u00c3\u2018","Ñ")] for stage in stages] #stage number, stage name
+        # stages = [[stage[1].replace("Ã‘","Ñ"),stage[3].replace(
+        # "Ã‘","Ñ")] for stage in stages] #stage number, stage name
+        stages = [[stage[1], stage[3]] for stage in stages]  # stage number, stage name
+        results_proxy.close()
+        return stages
 
-
-    def select_all_Stages(self):
-        #Query only registers where Step equals zero --> step zero equals stage title
-        selectQuery = select([self.Resiliencia]).where(self.Resiliencia.c.Paso==0)
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        Stages = resultsProxy.fetchall()
-        #Stages = [[stage[1].replace("\u00c3\u2018","Ñ"),stage[3].replace("\u00c3\u2018","Ñ")] for stage in Stages] #stage number, stage name
-        #Stages = [[stage[1].replace("Ã‘","Ñ"),stage[3].replace("Ã‘","Ñ")] for stage in Stages] #stage number, stage name
-        Stages = [[stage[1],stage[3]] for stage in Stages] #stage number, stage name
-        resultsProxy.close()
-        return Stages
-
+    def select_all_indicators(self):
+        select_query = select([self.Resiliencia]).where(
+                                                        self.Resiliencia.c.INDICADOR != None
+                                                        ).order_by(
+                                                                    self.Resiliencia.c.Etapa.asc()
+                                                                    )
+        results_proxy = self.mainConnection.execute(select_query)
+        indicators = results_proxy.fetchall()
+        indicators = [dict(Etapa=indicator[1], Paso=indicator[2], Indicador=indicator[5], Verificador=indicator[6],
+                           Descripcion=indicator[7]) for indicator in indicators]
+        results_proxy.close()
+        return indicators
 
     def count_resilience_steps(self):
-        selectQuery = select([func.count(self.Resiliencia.c.ID).label('Pasos')]).where(self.Resiliencia.c.Paso>0)
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        record = resultsProxy.first()
+        select_query = select([func.count(
+                                        self.Resiliencia.c.ID
+                                        ).label('Pasos')]).where(
+                                                                self.Resiliencia.c.Paso > 0
+                                                                )
+        results_proxy = self.mainConnection.execute(select_query)
+        record = results_proxy.first()
         return record.Pasos
-
 
     def count_resilience_steps_within_stage(self, stage):
-        selectQuery = select([func.count(self.Resiliencia.c.ID).label('Pasos')]).where(
-                                                                                        and_(
-                                                                                            self.Resiliencia.c.Etapa==stage,
-                                                                                            self.Resiliencia.c.Paso>0
-                                                                                        )
-                                                                                )
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        record = resultsProxy.first()
+        select_query = select([func.count(self.Resiliencia.c.ID).label('Pasos')]).where(
+            and_(
+                self.Resiliencia.c.Etapa == stage,
+                self.Resiliencia.c.Paso > 0
+            )
+        )
+        results_proxy = self.mainConnection.execute(select_query)
+        record = results_proxy.first()
         return record.Pasos
-
 
     def count_resilience_stages(self):
-        selectQuery = select([func.count(self.Resiliencia.c.ID).label('Etapas')]).where(self.Resiliencia.c.Paso==0)
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        record = resultsProxy.first()
+        select_query = select([func.count(self.Resiliencia.c.ID).label('Etapas')]).where(self.Resiliencia.c.Paso == 0)
+        results_proxy = self.mainConnection.execute(select_query)
+        record = results_proxy.first()
         return record.Etapas
 
-
     def count_accomplished_resilience_steps(self, stage, step):
-        selectQuery = select([func.count(self.Resiliencia.c.ID).label('Pasos')]).where(
-                                                                                        and_(
-                                                                                            self.Resiliencia.c.Etapa<=stage,
-                                                                                            self.Resiliencia.c.Paso<step,
-                                                                                            self.Resiliencia.c.Paso>0
-                                                                                        )
-                                                                                )
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        record = resultsProxy.first()
-        return record.Pasos
-
+        select_query = select([func.count(self.Resiliencia.c.ID).label('Pasos')]).where(
+            and_(
+                self.Resiliencia.c.Etapa < stage,
+                self.Resiliencia.c.Paso > 0
+            )
+        )
+        results_proxy = self.mainConnection.execute(select_query)
+        record = results_proxy.first()
+        accomplished_steps = int(record.Pasos) + (int(step)-1)
+        return accomplished_steps
 
     def count_accomplished_resilience_steps_within_stage(self, stage, step):
-        selectQuery = select([func.count(self.Resiliencia.c.ID).label('Pasos')]).where(
-                                                                                        and_(
-                                                                                            self.Resiliencia.c.Etapa==stage,
-                                                                                            self.Resiliencia.c.Paso<step,
-                                                                                            self.Resiliencia.c.Paso>0
-                                                                                        )
-                                                                                )
-        resultsProxy = self.mainConnection.execute(selectQuery)
-        record = resultsProxy.first()
+        select_query = select([func.count(self.Resiliencia.c.ID).label('Pasos')]).where(
+            and_(
+                self.Resiliencia.c.Etapa == stage,
+                self.Resiliencia.c.Paso < step,
+                self.Resiliencia.c.Paso > 0
+            )
+        )
+        results_proxy = self.mainConnection.execute(select_query)
+        record = results_proxy.first()
         return record.Pasos
 
-
-    def get_accomplished_percentages_total_and_stage(self, CurrentStage, CurrentStep):
-        Total = self.count_accomplished_resilience_steps(CurrentStage, CurrentStep)
-        Stage = self.count_accomplished_resilience_steps_within_stage(CurrentStage, CurrentStep)
-        TotalCount = self.count_resilience_steps()
-        StageCount = self.count_resilience_steps_within_stage(CurrentStage)
-        TotalPercentage = round((Total/TotalCount*100),1)
-        StagePercentage = round((Stage/StageCount*100),1)
-        Percentages = dict(Total=TotalPercentage,Stage=StagePercentage)
-        return Percentages
+    def get_accomplished_percentages_total_and_stage(self, current_stage, current_step):
+        total = self.count_accomplished_resilience_steps(current_stage, current_step)
+        stage = self.count_accomplished_resilience_steps_within_stage(current_stage, current_step)
+        total_count = self.count_resilience_steps()
+        stage_count = self.count_resilience_steps_within_stage(current_stage)
+        total_percentage = round((total / total_count * 100), 1)
+        stage_percentage = round((stage / stage_count * 100), 1)
+        percentages = dict(Total=total_percentage, Stage=stage_percentage)
+        return percentages
 
 
 def main():
-    db = DB2_Resilience_Steps.getInstance()
+    db = Db2ResilienceSteps.get_resilience_instance()
     steps = db.count_resilience_steps()
     stages = db.count_resilience_stages()
-    accomplished = db.count_accomplished_resilience_steps(2,8)
-    accomplished_in = db.count_accomplished_resilience_steps_within_stage(2,8)
-    percentages = db.get_accomplished_percentages_total_and_stage(2,8)
+    accomplished = db.count_accomplished_resilience_steps(2, 8)
+    accomplished_in = db.count_accomplished_resilience_steps_within_stage(2, 8)
+    percentages = db.get_accomplished_percentages_total_and_stage(2, 8)
+    indicators = db.select_all_indicators()
     print("Etapas: ", stages)
-    print("Pasos: ",steps)
-    print("Cumplidos: ",accomplished,"(total) / ", accomplished_in, "(en esta etapa)")
-    print("Percentages: ", percentages["Total"], "% / ", percentages["Stage"],"%")
+    print("Pasos: ", steps)
+    print("Cumplidos: ", accomplished, "(total) / ", accomplished_in, "(en esta etapa)")
+    print("Percentages: ", percentages["Total"], "% / ", percentages["Stage"], "%")
+    print("**************** INDICATORS *********************")
+    pprint(indicators)
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
