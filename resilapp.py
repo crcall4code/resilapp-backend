@@ -2,7 +2,7 @@
 import atexit
 import os
 
-from fastjsonschema import JsonSchemaDefinitionException, JsonSchemaException
+from jsonschema.exceptions import ValidationError, FormatError, SchemaError
 from flask import Flask, render_template, request, jsonify
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS, cross_origin
@@ -120,7 +120,7 @@ def community_and_resilience(province, city, town):
         #               )
         # ******************************************
         try:
-            cloudant_db.validate_resilience_object(resiliencia_from_request['RESILIENCIA'])
+            cloudant_db.validate_resilience_object(resiliencia_from_request)
             # Save/Update community in SQL database
             db_communities.insert_community(community)
             # Save/Update community in Document database
@@ -129,15 +129,17 @@ def community_and_resilience(province, city, town):
                 PUEBLO=community['PUEBLO'],
                 RESILIENCIA=resiliencia_from_request
             )
-            if resiliencia_from_request['_rev']:
+            if '_rev' in resiliencia_from_request:
                 resiliencia_for_community['_rev'] = resiliencia_from_request['_rev']
                 resiliencia_for_community['_id'] = resiliencia_from_request['_id']
             document_save = cloudant_db.update_document_or_save_if_new(resiliencia_for_community)
             return jsonify(document_save)
-        except JsonSchemaDefinitionException:
-            return jsonify(dict(Error="Bad JSON definition"))
-        except JsonSchemaException:
-            return jsonify(dict(Error="JSON not following definition"))
+        except SchemaError as error:
+            return jsonify(dict(Schema_error=repr(error)))
+        except ValidationError as error:
+            return jsonify(dict(Validation_error=repr(error)))
+        except FormatError as error:
+            return jsonify(dict(Format_error=repr(error)))
 
 
 @app.route('/api/towns/provinces', methods=['GET'])
@@ -178,6 +180,7 @@ def get_poblado(province, city, town):
     return jsonify(town)
 
 
+# ********************* LISTS *****************************************
 # List of Resilience Stages
 @app.route('/api/resilience/stages', methods=['GET'])
 @cross_origin(send_wildcard=True)

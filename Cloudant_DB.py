@@ -1,9 +1,9 @@
 # -*- coding: latin_1 -*-
-import fastjsonschema
 import json
 import os
 from pprint import pprint
 
+from jsonschema import validate, FormatError, ValidationError, SchemaError
 from cloudant import Cloudant
 
 
@@ -37,7 +37,7 @@ class CloudantCommunities:
 
     @staticmethod
     def validate_resilience_object(resilience_object):
-        schema = {
+        resilience_schema = {
             "$schema": "http://json-schema.org/draft-04/schema#",
             "type": "object",
             "properties": {
@@ -98,8 +98,7 @@ class CloudantCommunities:
                 "RESILIENCIA"
             ]
         }
-        validate = fastjsonschema.compile(schema)
-        validate(resilience_object)
+        validate(instance=resilience_object, schema=resilience_schema)
 
     def get_document_by_id(self, doc_id):
         doc = None
@@ -132,10 +131,7 @@ class CloudantCommunities:
         return data
 
     def update_document_or_save_if_new(self, data):
-        try:
-            document_in_database = self.get_document_by_id(data['POBLAC_ID'])
-        except KeyError:
-            document_in_database = None
+        document_in_database = self.get_document_by_id(data['POBLAC_ID'])
         if document_in_database is not None:
             data = self.update_document(data, document_in_database)
         else:
@@ -165,10 +161,31 @@ def test_sample():
 
 def main():
     cloud_db = CloudantCommunities()
-    sample_data = test_sample()
-    save = cloud_db.update_document_or_save_if_new(sample_data)
-    macacona = cloud_db.get_document_by_id(sample_data["POBLAC_ID"])
-    pprint(macacona)
+    sample_data = {"RESILIENCIA":
+        {"RESILIENCIA": {
+            "badges": [
+                {
+                    "badge_id": 1,
+                    "description": "Formar equipo de trabajo",
+                    "date": "2019-07-27",
+                    "type": "step"
+                }
+            ],
+            "stage": 1,
+            "step": 2,
+            "resilience_stage_level": "rest",#14.3,
+            "resilience_total_level": 4
+        }
+        }
+    }
+    try:
+        cloud_db.validate_resilience_object(sample_data["RESILIENCIA"])
+    except SchemaError as error:
+        print(dict(Schema_error=repr(error)))
+    except ValidationError as error:
+        print(dict(Validation_error=repr(error)))
+    except FormatError as error:
+        print(dict(Format_error=repr(error)))
 
 
 if __name__ == "__main__":
