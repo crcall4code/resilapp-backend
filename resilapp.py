@@ -89,7 +89,7 @@ def community_and_resilience(province, city, town):
         if community is not None:
             resiliencia = cloudant_db.get_document_by_id(community['POBLAC_ID'])
             print("RESILIENCIA:", resiliencia)
-            community['RESILIENCIA'] = resiliencia
+            community['RESILIENCIA'] = resiliencia['RESILIENCIA']['RESILIENCIA']
         return jsonify(community)
     elif request.method == 'POST':
         db_towns = Db2Towns.get_towns_instance()
@@ -124,11 +124,16 @@ def community_and_resilience(province, city, town):
             # Save/Update community in SQL database
             db_communities.insert_community(community)
             # Save/Update community in Document database
+            updated_percentages = db_resilience_steps.get_accomplished_percentages_total_and_stage(
+                resiliencia_from_request['RESILIENCIA']['stage'], resiliencia_from_request['RESILIENCIA']['step'])
+            print(updated_percentages)
             resiliencia_for_community = dict(
                 POBLAC_ID=community['POBLAC_ID'],
                 PUEBLO=community['PUEBLO'],
                 RESILIENCIA=resiliencia_from_request
             )
+            resiliencia_for_community['RESILIENCIA']['RESILIENCIA']['resilience_stage_level'] = float(updated_percentages['Stage'])
+            resiliencia_for_community['RESILIENCIA']['RESILIENCIA']['resilience_total_level'] = float(updated_percentages['Total'])
             if '_rev' in resiliencia_from_request:
                 resiliencia_for_community['_rev'] = resiliencia_from_request['_rev']
                 resiliencia_for_community['_id'] = resiliencia_from_request['_id']
