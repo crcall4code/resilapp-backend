@@ -132,7 +132,10 @@ class CloudantCommunities:
         return data
 
     def update_document_or_save_if_new(self, data):
-        document_in_database = self.get_document_by_id(data['POBLAC_ID'])
+        try:
+            document_in_database = self.get_document_by_id(data['POBLAC_ID'])
+        except KeyError:
+            document_in_database = None
         if document_in_database is not None:
             data = self.update_document(data, document_in_database)
         else:

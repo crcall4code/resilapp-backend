@@ -41,6 +41,11 @@ def comunidades():
     return render_page('comunidades.html')
 
 
+@app.route('/comunidades/<province>/<canton>/<community>')
+def query_comunidades(province, canton, community):
+    return render_template('comunidades.html', province=province, canton=canton, community=community)
+
+
 @app.route('/consultar-comunidad')
 def consultar_comunidad():
     return render_page('consultar-comunidad.html')
@@ -64,7 +69,7 @@ def not_found(e):
 # ******************************* DATABASE FUNCTIONS ***************************************
 
 @app.route('/api/communities/<community_id>', methods=['GET'])
-@cross_origin()
+@cross_origin(send_wildcard=True)
 def get_community_resilience(community_id):
     community_resilience = cloudant_db.get_document_by_id(community_id)
     if not community_resilience:
@@ -73,7 +78,7 @@ def get_community_resilience(community_id):
 
 
 @app.route('/api/communities/<province>/<city>/<town>', methods=['POST', 'GET'])
-@cross_origin()
+@cross_origin(send_wildcard=True)
 def community_and_resilience(province, city, town):
     if request.method == 'GET':
         db_towns = Db2Towns.get_towns_instance()
@@ -120,9 +125,9 @@ def community_and_resilience(province, city, town):
             db_communities.insert_community(community)
             # Save/Update community in Document database
             resiliencia_for_community = dict(
-                POBLAC_ID = community['POBLAC_ID'],
-                PUEBLO = community['PUEBLO'],
-                RESILIENCIA = resiliencia_from_request
+                POBLAC_ID=community['POBLAC_ID'],
+                PUEBLO=community['PUEBLO'],
+                RESILIENCIA=resiliencia_from_request
             )
             if resiliencia_from_request['_rev']:
                 resiliencia_for_community['_rev'] = resiliencia_from_request['_rev']
@@ -134,8 +139,9 @@ def community_and_resilience(province, city, town):
         except JsonSchemaException:
             return jsonify(dict(Error="JSON not following definition"))
 
+
 @app.route('/api/towns/provinces', methods=['GET'])
-@cross_origin()
+@cross_origin(send_wildcard=True)
 def get_provinces():
     db = Db2Towns.get_towns_instance()
     provinces = db.select_all_states()
@@ -143,7 +149,7 @@ def get_provinces():
 
 
 @app.route('/api/towns/<province>', methods=['GET'])
-@cross_origin()
+@cross_origin(send_wildcard=True)
 def get_cities(province):
     db = Db2Towns.get_towns_instance()
     cities = db.select_all_cities_by_state(province)
@@ -153,7 +159,7 @@ def get_cities(province):
 
 
 @app.route('/api/towns/<province>/<city>', methods=['GET'])
-@cross_origin()
+@cross_origin(send_wildcard=True)
 def get_towns(province, city):
     db = Db2Towns.get_towns_instance()
     towns = db.select_all_towns_by_state_and_city(province, city)
@@ -163,7 +169,7 @@ def get_towns(province, city):
 
 
 @app.route('/api/towns/<province>/<city>/<town>', methods=['GET'])
-@cross_origin()
+@cross_origin(send_wildcard=True)
 def get_poblado(province, city, town):
     db = Db2Towns.get_towns_instance()
     town = db.select_town_dictionary_by_state_city_and_name(province, city, town)
@@ -171,9 +177,10 @@ def get_poblado(province, city, town):
         town = "Poblado, Canton o Provincia no encontrados."
     return jsonify(town)
 
+
 # List of Resilience Stages
 @app.route('/api/resilience/stages', methods=['GET'])
-@cross_origin()
+@cross_origin(send_wildcard=True)
 def get_stages():
     db = Db2ResilienceSteps.get_resilience_instance()
     stages = db.select_all_stages()
@@ -181,9 +188,10 @@ def get_stages():
         stages.append("Error in database.")
     return jsonify(stages)
 
+
 # List of Resilience Steps
 @app.route('/api/resilience/steps', methods=['GET'])
-@cross_origin()
+@cross_origin(send_wildcard=True)
 def get_steps():
     db = Db2ResilienceSteps.get_resilience_instance()
     steps = db.select_all_resilience_steps()
@@ -191,9 +199,10 @@ def get_steps():
         steps.append("Error in database.")
     return jsonify(steps)
 
+
 # List of Resilience indicators
 @app.route('/api/resilience/indicators', methods=['GET'])
-@cross_origin()
+@cross_origin(send_wildcard=True)
 def get_indicators():
     db = Db2ResilienceSteps.get_resilience_instance()
     indicators = db.select_all_indicators()
@@ -201,10 +210,11 @@ def get_indicators():
         indicators.append("Error in database.")
     return jsonify(indicators)
 
+
 # *************************** COUNTERS *****************************
 # Number of resilience steps
 @app.route('/api/resilience/steps_count', methods=['GET'])
-@cross_origin()
+@cross_origin(send_wildcard=True)
 def get_steps_count():
     db = Db2ResilienceSteps.get_resilience_instance()
     steps_count = db.count_resilience_steps()
@@ -213,9 +223,10 @@ def get_steps_count():
     steps_count = dict(Steps_count=int(steps_count))
     return jsonify(steps_count)
 
+
 # Number of resilience steps within a given resilience stage
 @app.route('/api/resilience/steps_count_within_stage/<stage>', methods=['GET'])
-@cross_origin()
+@cross_origin(send_wildcard=True)
 def get_steps_count_within_stage(stage):
     db = Db2ResilienceSteps.get_resilience_instance()
     steps_count_within_stage = db.count_resilience_steps_within_stage(stage)
@@ -224,20 +235,22 @@ def get_steps_count_within_stage(stage):
     steps_count_within_stage = dict(Steps_count_within_stage=int(steps_count_within_stage))
     return jsonify(steps_count_within_stage)
 
+
 # Number of total accomplished resilience steps, this doesn't count the current one
 @app.route('/api/resilience/total_accomplished_steps/<current_stage>/<current_step>', methods=['GET'])
-@cross_origin()
+@cross_origin(send_wildcard=True)
 def get_total_accomplished_steps(current_stage, current_step):
     db = Db2ResilienceSteps.get_resilience_instance()
     total_accomplished_steps = db.count_accomplished_resilience_steps(current_stage, current_step)
     if not total_accomplished_steps:
         total_accomplished_steps.append("Error in database.")
-    total_accomplished_steps = dict(Total_accomplished_steps = int(total_accomplished_steps))
+    total_accomplished_steps = dict(Total_accomplished_steps=int(total_accomplished_steps))
     return jsonify(total_accomplished_steps)
+
 
 # Number of accomplished resilience steps within a given resilience stage, this doesn't count the current one
 @app.route('/api/resilience/accomplished_steps_within_stage/<current_stage>/<current_step>', methods=['GET'])
-@cross_origin()
+@cross_origin(send_wildcard=True)
 def get_accomplished_steps_within_stage(current_stage, current_step):
     db = Db2ResilienceSteps.get_resilience_instance()
     accomplished_steps_within_stage = db.count_accomplished_resilience_steps_within_stage(current_stage, current_step)
@@ -246,9 +259,10 @@ def get_accomplished_steps_within_stage(current_stage, current_step):
     accomplished_steps_within_stage = dict(Accomplished_steps_within_stage=int(accomplished_steps_within_stage))
     return jsonify(accomplished_steps_within_stage)
 
+
 # Percentages of accomplished resilience steps, total and within stage, this doesn't count the current step
 @app.route('/api/resilience/accomplished_percentages/<current_stage>/<current_step>', methods=['GET'])
-@cross_origin()
+@cross_origin(send_wildcard=True)
 def get_accomplished_percentages(current_stage, current_step):
     db = Db2ResilienceSteps.get_resilience_instance()
     accomplished_percentages = db.get_accomplished_percentages_total_and_stage(current_stage, current_step)
@@ -258,6 +272,8 @@ def get_accomplished_percentages(current_stage, current_step):
         accomplished_percentages['Total'] = float(accomplished_percentages['Total'])
         accomplished_percentages['Stage'] = float(accomplished_percentages['Stage'])
     return jsonify(accomplished_percentages)
+
+
 # ************************** END OF DATABASE FUNCTIONS ***************************
 
 @atexit.register
