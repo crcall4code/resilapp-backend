@@ -64,13 +64,15 @@
                     <td>
                         <div class="input-group mb-3">
                             <div class="input-group-prepend">
-                                <span class="input-group-text">Stage</span>
+                                <span class="input-group-text">Etapa</span>
+                                <input id="community-stage" min="1" type="number" size="20" class="form-control" placeholder="Etapa">
                             </div>
-                            <input id="community-stage" type="text" size="25" class="form-control" placeholder="Stage">
-                            <input id="community-step" type="text" size="25" class="form-control text-right"
-                                   placeholder="Step">
-                            <div class="input-group-append">
-                                <span class="input-group-text">Step</span>
+                        </div>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">Paso</span>
+                                <input id="community-step" min="1" type="number" size="20" class="form-control"
+                                   placeholder="Paso">
                             </div>
                         </div>
                     </td>
@@ -109,12 +111,12 @@
                     <td>
                         <h4 class="small font-weight-bold">
                             Pasos/Indicadores
-                            <span class="float-right" id="total-progress">
-                                100%
+                            <span class="float-right" id="step-progress">
+                                50%
                             </span>
                         </h4>
                         <div class="progress mb-4">
-                            <div id="total-progress-bar" class="progress-bar" role="progressbar" style="width: 100%" aria-valuenow="0"
+                            <div id="step-progress-bar" class="progress-bar" role="progressbar" style="width: 50%" aria-valuenow="50"
                                  aria-valuemin="0" aria-valuemax="25">
                             </div>
                         </div>
@@ -153,6 +155,7 @@
             community.town = "{{ community }}";
         {% endif %}
         console.log(community);
+
         $(document).ready(function () {
             if ($.isEmptyObject(community)) {
                 getProvinces();
@@ -161,10 +164,38 @@
                 $('#city-select').append(new Option(community.city));
                 $('#community-select').append(new Option(community.town));
             }
+            $('#community-name').val("");
+            $('#town-id').val("");
+            $('#community-stage').val("");
+            $('#community-step').val("");
+            let getUrl = window.location;
+            let baseUrl = getUrl.protocol + "//" + getUrl.host;
+            $.get(baseUrl + "/api/resilience/stages_count")
+                .done(function (data) {
+                    $('#community-stage').attr("max", String(data.Stages_count));
+                });
+        });
+
+        var steps_by_stage;
+        function get_steps_by_stage(){
+            let getUrl = window.location;
+            let baseUrl = getUrl.protocol + "//" + getUrl.host;
+            $.get(baseUrl + "/api/resilience/steps_count_by_stage/")
+                .done(function (data) {
+                    steps_by_stage = data.Steps_count_by_stage;
+                });
+        };
+        get_steps_by_stage();
+
+        $('#community-stage').change(function () {
+            let stage_number = $('#community-stage').val();
+            $('#community-step').attr("max", String(steps_by_stage[stage_number]));
         });
 
         function getProvinces() {
-            $.get("https://resilapp.mybluemix.net/api/towns/provinces")
+            let getUrl = window.location;
+            let baseUrl = getUrl.protocol + "//" + getUrl.host;
+            $.get(baseUrl + "/api/towns/provinces")
                 .done(function (data) {
                     if (data != null) {
                         $('#state-select').append(new Option("Provincia:", "", true, true));
@@ -193,17 +224,44 @@
             let town = $('#community-select').val();
             let city = $('#city-select').val();
             let state = $('#state-select').val();
-            let communities_url = "https://resilapp.mybluemix.net/api/communities/";
+            let getUrl = window.location;
+            let baseUrl = getUrl.protocol + "//" + getUrl.host;
+            let communities_url = baseUrl + "/api/communities/";
             let community_url = communities_url.concat(state, "/", city, "/", town);
             if (state.length > 0 && city.length > 0 && town.length > 0) {
                 $.get(community_url, function (data) {
                     console.log(data);
                     if (data != null) {
-                        let community_name = data.PUEBLO + "," + data.CANTON + "," + data.PROVINCIA;
+                        let community_name = data.PUEBLO;
                         $('#community-name').val(community_name);
                         $('#town-id').val(data.POBLAC_ID);
                         $('#create_community').removeAttr('disabled');
-
+                        $('#community-stage').val(data.RESILIENCIA.stage);
+                        $('#community-step').val(data.RESILIENCIA.step);
+                        $('#total-progress').html(data.RESILIENCIA.resilience_total_level+"%");
+                        let total_progress_width = "width:"+ data.RESILIENCIA.resilience_total_level + "%";
+                        $('#total-progress-bar').attr({
+                            "style":total_progress_width,
+                            "aria-valuenow":String(data.RESILIENCIA.resilience_total_level)
+                        });
+                        $('#stage-progress').html(data.RESILIENCIA.resilience_stage_level+"%");
+                        let stage_progress_width = "width:"+ data.RESILIENCIA.resilience_stage_level + "%";
+                        $('#stage-progress-bar').attr({
+                            "style":stage_progress_width,
+                            "aria-valuenow":String(data.RESILIENCIA.resilience_stage_level)
+                        });
+                        let badges_number = data.RESILIENCIA.badges.length;
+                        let getUrl = window.location;
+                        let baseUrl = getUrl.protocol + "//" + getUrl.host;
+                        $.get(baseUrl + "/api/resilience/steps_count").done(function (data) {
+                            let total_steps = String(data.Steps_count);
+                            $('#step-progress').html(badges_number+"/"+total_steps);
+                            $('#step-progress-bar').attr({
+                                "style":total_progress_width,
+                                "aria-valuemax":total_steps,
+                                "aria-valuenow":String(badges_number)
+                                });
+                        });
                     } else {
                         $('#community-name').val('Community not found');
                     }
@@ -218,7 +276,9 @@
         $('#state-select').change(function () {
             $('#community-select').empty();
             $('#city-select').empty();
-            $.get("https://resilapp.mybluemix.net/api/towns/" + $('#state-select option:selected').val())
+            let getUrl = window.location;
+            let baseUrl = getUrl.protocol + "//" + getUrl.host;
+            $.get(baseUrl + "/api/towns/" + $('#state-select option:selected').val())
                 .done(function (data) {
                     if (data != null) {
                         $('#city-select').append(new Option("Cantón:", "", true, true));
@@ -230,7 +290,9 @@
         });
         $('#city-select').change(function () {
             $('#community-select').empty();
-            $.get("https://resilapp.mybluemix.net/api/towns/"
+            let getUrl = window.location;
+            let baseUrl = getUrl.protocol + "//" + getUrl.host;
+            $.get(baseUrl + "/api/towns/"
                 + $('#state-select option:selected').val()
                 + '/'
                 + $('#city-select option:selected').val())

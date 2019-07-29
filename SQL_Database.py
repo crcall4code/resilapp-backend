@@ -6,20 +6,20 @@ from json import dumps
 from pprint import pprint
 
 
-class Db2Towns:
+class Db2Database:
     __instance = None
 
     @staticmethod
-    def get_towns_instance():
-        if Db2Towns.__instance is None:
-            Db2Towns()
-        return Db2Towns.__instance
+    def get_instance():
+        if Db2Database.__instance is None:
+            Db2Database()
+        return Db2Database.__instance
 
     def __init__(self):
-        if Db2Towns.__instance is not None:
+        if Db2Database.__instance is not None:
             raise Exception("This class is a singleton")
         else:
-            Db2Towns.__instance = self
+            Db2Database.__instance = self
             self.username = "mhg98374"
             self.password = "b7gqx63^51fnrqvp"
             self.host = "dashdb-txn-sbox-yp-dal09-03.services.dal.bluemix.net"
@@ -39,7 +39,23 @@ class Db2Towns:
                                Column('X_COORDENATES', Float(), nullable=False),
                                Column('Y_COORDENATES', Float(), nullable=False)
                                )
+            self.Communities = Table('COMMUNITIES', self.metadata,
+                                     Column('POBLAC_ID', Integer(), nullable=False),
+                                     Column('PUEBLO', Text(), nullable=False),
+                                     Column('VER', Text(), nullable=True)
+                                     )
+            self.Resiliencia = Table('RESILIENCIA-PASOS', self.metadata,
+                                     Column('ID', Integer(), nullable=False, unique=True, primary_key=True),
+                                     Column('Etapa', Integer(), nullable=False),
+                                     Column('Paso', Integer(), nullable=False),
+                                     Column('Detalle', Text(), nullable=False),
+                                     Column('Referencia', Text(), nullable=True),
+                                     Column('INDICADOR', Text(), nullable=True),
+                                     Column('VERIFICADOR', Text(), nullable=True),
+                                     Column('DESCRIPCION', Text(), nullable=True)
+                                     )
 
+# ****************************** TOWNS FUNCTIONS *****************************************
     def select_all_towns(self):
         select_query = select([self.Towns])
         results_proxy = self.mainConnection.execute(select_query)
@@ -149,10 +165,6 @@ class Db2Towns:
                 ID=town[0],
                 POBLAC_ID=town[1],
                 PROVINCIA=town[2],
-                # CANTON=town[3].replace("\u00c3\u2018","Ñ"),
-                # PUEBLO=town[4].replace("\u00c3\u2018","Ñ"),
-                # CANTON=town[3].replace("Ã‘","Ñ"),
-                # PUEBLO=town[4].replace("Ã‘","Ñ"),
                 CANTON=town[3],
                 PUEBLO=town[4],
                 X_COORDENATES=town[5],
@@ -163,37 +175,7 @@ class Db2Towns:
         results_proxy.close()
         return town_as_dictionary
 
-
-class Db2Communities:
-    __instance = None
-
-    @staticmethod
-    def get_communities_instance():
-        if Db2Communities.__instance is None:
-            Db2Communities()
-        return Db2Communities.__instance
-
-    def __init__(self):
-        if Db2Communities.__instance is not None:
-            raise Exception("This class is a singleton")
-        else:
-            Db2Communities.__instance = self
-            self.username = "mhg98374"
-            self.password = "b7gqx63^51fnrqvp"
-            self.host = "dashdb-txn-sbox-yp-dal09-03.services.dal.bluemix.net"
-            self.port = 50000
-            self.schema = "BLUDB"  # "LFJ47179"
-            self.db2ConnectionString = "db2+ibm_db://{}:{}@{}:{}/{}".format(self.username, self.password, self.host,
-                                                                            self.port, self.schema)
-            self.engine = create_engine(self.db2ConnectionString, pool_size=1, max_overflow=0)
-            self.mainConnection = self.engine.connect()
-            self.metadata = MetaData()
-            self.Communities = Table('COMMUNITIES', self.metadata,
-                                     Column('POBLAC_ID', Integer(), nullable=False),
-                                     Column('PUEBLO', Text(), nullable=False),
-                                     Column('VER', Text(), nullable=True)
-                                     )
-
+# ************************* COMMUNITIES FUNCTIONS **************************************
     def insert_community(self, community_data_as_dictionary):
         if not self.is_community_in_database(community_data_as_dictionary)[0]:
             insert_statement = self.Communities.insert().values(
@@ -214,11 +196,6 @@ class Db2Communities:
         response = [is_community_in_db, community]
         select_query = select([self.Communities]).where(
             self.Communities.c.POBLAC_ID == community_data_as_dictionary["POBLAC_ID"])
-        # and_(
-        # self.Communities.c.PUEBLO==community_data_as_dictionary["PUEBLO"].replace("Ñ","\u00c3\u2018")
-        # self.Communities.c.PUEBLO==community_data_as_dictionary["PUEBLO"].replace("Ñ","Ã‘")
-        # self.Communities.c.PUEBLO==community_data_as_dictionary["PUEBLO"]
-        # )
         results_proxy = self.mainConnection.execute(select_query)
         community = results_proxy.fetchone()
         if community is not None:
@@ -232,13 +209,9 @@ class Db2Communities:
             POBLAC_ID=CommunityDataAsDictionary["POBLAC_ID"],
             PUEBLO=CommunityDataAsDictionary["PUEBLO"]
         )
-        # and_(
-        # self.Communities.c.PUEBLO==community_data_as_dictionary["PUEBLO"].replace("Ñ","\u00c3\u2018")
-        # self.Communities.c.PUEBLO==community_data_as_dictionary["PUEBLO"].replace("Ñ","Ã‘")
-        # self.Communities.c.PUEBLO==community_data_as_dictionary["PUEBLO"]
-        # )
         update_statement.compile().params
         result = self.mainConnection.execute(update_statement)
+        return result
 
     def select_community_by_poblac_id(self, poblac_id):
         select_query = select([self.Communities]).where(self.Communities.c.POBLAC_ID == poblac_id)
@@ -253,8 +226,6 @@ class Db2Communities:
         community = results_proxy.fetchone()
         community_as_dictionary = dict(
             POBLAC_ID=community[0],
-            # PUEBLO=community[1].replace("\u00c3\u2018","Ñ"),
-            # PUEBLO=community[1].replace("Ã‘","Ñ"),
             PUEBLO=community[1],
             RESILIENCIA=community[2]
         )
@@ -262,58 +233,18 @@ class Db2Communities:
         return community_as_dictionary
 
     def select_community_dictionary_by_state_city_and_name(self, state, city, community_name):
-        towns_db = Db2Towns.get_towns_instance()
-        # Town = towns_db.select_town_dictionary_by_state_city_and_name(state, city.replace("Ñ","\u00c3\u2018"),
-        # community_name.replace("Ñ","\u00c3\u2018"))
-        # Town = towns_db.select_town_dictionary_by_state_city_and_name(state, city.replace("Ñ","Ã‘"),
-        # community_name.replace("Ñ","Ã‘"))
-        town = towns_db.select_Town_dictionary_by_State_City_and_Name(state, city, community_name)
+        town = self.select_Town_dictionary_by_State_City_and_Name(state, city, community_name)
         community = self.select_community_dictionary_by_poblac_id(town['POBLAC_ID'])
         return community
 
-
-class Db2ResilienceSteps:
-    __instance = None
-
-    @staticmethod
-    def get_resilience_instance():
-        if Db2ResilienceSteps.__instance is None:
-            Db2ResilienceSteps()
-        return Db2ResilienceSteps.__instance
-
-    def __init__(self):
-        if Db2ResilienceSteps.__instance is not None:
-            raise Exception("This class is a singleton")
-        else:
-            Db2ResilienceSteps.__instance = self
-            self.username = "mhg98374"
-            self.password = "b7gqx63^51fnrqvp"
-            self.host = "dashdb-txn-sbox-yp-dal09-03.services.dal.bluemix.net"
-            self.port = 50000
-            self.schema = "BLUDB"  # "LFJ47179"
-            self.db2ConnectionString = "db2+ibm_db://{}:{}@{}:{}/{}".format(self.username, self.password, self.host,
-                                                                            self.port, self.schema)
-            self.engine = create_engine(self.db2ConnectionString, pool_size=1, max_overflow=0)
-            self.mainConnection = self.engine.connect()
-            self.metadata = MetaData()
-            self.Resiliencia = Table('RESILIENCIA-PASOS', self.metadata,
-                                     Column('ID', Integer(), nullable=False, unique=True, primary_key=True),
-                                     Column('Etapa', Integer(), nullable=False),
-                                     Column('Paso', Integer(), nullable=False),
-                                     Column('Detalle', Text(), nullable=False),
-                                     Column('Referencia', Text(), nullable=True),
-                                     Column('INDICADOR', Text(), nullable=True),
-                                     Column('VERIFICADOR', Text(), nullable=True),
-                                     Column('DESCRIPCION', Text(), nullable=True)
-                                     )
-
+# ***************************** RESILIENCE FUNCTIONS ******************************
     def select_all_resilience_steps(self):
         select_query = select([self.Resiliencia]).order_by(
                                                             self.Resiliencia.c.Etapa.asc()
                                                             )
         results_proxy = self.mainConnection.execute(select_query)
         resilience_steps = results_proxy.fetchall()
-        # Clean list to get rid of Stage id, titles, references, achievments
+        # Clean list to get rid of Stage id, titles, references, achievements
         # Stage,step,detail
         resilience_steps = [[step[1], step[2], step[3]] for step in resilience_steps if
                             step[2] != 0]  # Stage,step,detail
@@ -325,10 +256,6 @@ class Db2ResilienceSteps:
         select_query = select([self.Resiliencia]).where(self.Resiliencia.c.Paso == 0)
         results_proxy = self.mainConnection.execute(select_query)
         stages = results_proxy.fetchall()
-        # stages = [[stage[1].replace("\u00c3\u2018","Ñ"),stage[3].replace(
-        # "\u00c3\u2018","Ñ")] for stage in stages] #stage number, stage name
-        # stages = [[stage[1].replace("Ã‘","Ñ"),stage[3].replace(
-        # "Ã‘","Ñ")] for stage in stages] #stage number, stage name
         stages = [[stage[1], stage[3]] for stage in stages]  # stage number, stage name
         results_proxy.close()
         return stages
@@ -341,11 +268,17 @@ class Db2ResilienceSteps:
                                                                     )
         results_proxy = self.mainConnection.execute(select_query)
         indicators = results_proxy.fetchall()
-        indicators = [dict(Etapa=indicator[1], Paso=indicator[2], Indicador=indicator[5], Verificador=indicator[6],
-                           Descripcion=indicator[7]) for indicator in indicators]
+        indicators = [dict(
+            Etapa=indicator[1],
+            Paso=indicator[2],
+            Indicador=indicator[5],
+            Verificador=indicator[6],
+            Descripcion=indicator[7])
+            for indicator in indicators]
         results_proxy.close()
         return indicators
 
+# ************** COUNTERS *****************************
     def count_resilience_steps(self):
         select_query = select([func.count(
                                         self.Resiliencia.c.ID
@@ -397,6 +330,14 @@ class Db2ResilienceSteps:
         record = results_proxy.first()
         return record.Pasos
 
+    def get_steps_by_stage(self):
+        steps_in_stages = {}
+        stages = int(self.count_resilience_stages())
+        for stage in range(1, stages+1):
+            steps = int(self.count_resilience_steps_within_stage(stage))
+            steps_in_stages.update({stage:steps})
+        return steps_in_stages
+
     def get_accomplished_percentages_total_and_stage(self, current_stage, current_step):
         total = self.count_accomplished_resilience_steps(current_stage, current_step)
         stage = self.count_accomplished_resilience_steps_within_stage(current_stage, current_step)
@@ -409,19 +350,8 @@ class Db2ResilienceSteps:
 
 
 def main():
-    db = Db2ResilienceSteps.get_resilience_instance()
-    steps = db.count_resilience_steps()
-    stages = db.count_resilience_stages()
-    accomplished = db.count_accomplished_resilience_steps(2, 8)
-    accomplished_in = db.count_accomplished_resilience_steps_within_stage(2, 8)
-    percentages = db.get_accomplished_percentages_total_and_stage(2, 8)
-    indicators = db.select_all_indicators()
-    print("Etapas: ", stages)
-    print("Pasos: ", steps)
-    print("Cumplidos: ", accomplished, "(total) / ", accomplished_in, "(en esta etapa)")
-    print("Percentages: ", percentages["Total"], "% / ", percentages["Stage"], "%")
-    print("**************** INDICATORS *********************")
-    pprint(indicators)
+    db = Db2Database.get_instance()
+    pprint(db.get_steps_by_stage())
 
 
 if __name__ == "__main__":

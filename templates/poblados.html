@@ -134,7 +134,9 @@
 
     <script>
         function getProvinces() {
-            $.get("https://resilapp.mybluemix.net/api/towns/provinces")
+            var getUrl = window.location;
+            var baseUrl = getUrl .protocol + "//" + getUrl.host;
+            $.get(baseUrl + "/api/towns/provinces")
                 .done(function (data) {
                     if (data != null) {
                         $('#state-select').append(new Option("Provincia:","",true,true));
@@ -156,7 +158,9 @@
             let town = $('#town-select').val();
             let city = $('#city-select').val();
             let state = $('#state-select').val();
-            let source = "./comunidades";
+            var getUrl = window.location;
+            var baseUrl = getUrl .protocol + "//" + getUrl.host;
+            let source = baseUrl + "/consultar-comunidad";
             let address = source.concat("/", state, "/", city, "/", town)
             window.location.href = address;
         });
@@ -166,7 +170,9 @@
             let town = $('#town-select').val();
             let city = $('#city-select').val();
             let state = $('#state-select').val();
-            let communities_url = "https://resilapp.mybluemix.net/api/towns/";
+            var getUrl = window.location;
+            var baseUrl = getUrl .protocol + "//" + getUrl.host;
+            let communities_url = baseUrl+"/api/towns/";
             let community_url = communities_url.concat(state, "/", city, "/", town);
             if (state.length > 0 && city.length > 0 && town.length > 0) {
                 $.get(community_url, function (data) {
@@ -191,7 +197,9 @@
         $('#state-select').change(function () {
             $('#town-select').empty();
             $('#city-select').empty();
-            $.get("https://resilapp.mybluemix.net/api/towns/" + $('#state-select option:selected').val())
+            var getUrl = window.location;
+            var baseUrl = getUrl .protocol + "//" + getUrl.host;
+            $.get(baseUrl + "/api/towns/" + $('#state-select option:selected').val())
                 .done(function (data) {
                     if (data != null) {
                         $('#city-select').append(new Option("Cantón:","",true,true));
@@ -203,7 +211,9 @@
         });
         $('#city-select').change(function () {
             $('#town-select').empty();
-            $.get("https://resilapp.mybluemix.net/api/towns/"
+            var getUrl = window.location;
+            var baseUrl = getUrl.protocol + "//" + getUrl.host;
+            $.get(baseUrl + "/api/towns/"
                 + $('#state-select option:selected').val()
                 + '/'
                 + $('#city-select option:selected').val())

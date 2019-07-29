@@ -2,15 +2,27 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="83171f85-639d-428d-a5ef-c943c2764095" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/static/js/bootstrap-input-spinner.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/luisd.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/luisd.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SQL_Database.py" beforeDir="false" afterPath="$PROJECT_DIR$/SQL_Database.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/resilapp.py" beforeDir="false" afterPath="$PROJECT_DIR$/resilapp.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/consultar-comunidad.html" beforeDir="false" afterPath="$PROJECT_DIR$/static/consultar-comunidad.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/comunidades.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/consultar-comunidad.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/poblados.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/poblados.html" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="JavaScript File" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -132,8 +144,8 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.resilapp" />
-        <item itemvalue="Python.Cloudant_DB" />
         <item itemvalue="Python.SQL_Database" />
+        <item itemvalue="Python.Cloudant_DB" />
         <item itemvalue="JavaScript Debug.consultar-comunidad.html" />
         <item itemvalue="JavaScript Debug.poblados.html" />
       </list>
@@ -154,7 +166,7 @@
       <workItem from="1564030858842" duration="121000" />
       <workItem from="1564032124955" duration="1616000" />
       <workItem from="1564277408988" duration="166000" />
-      <workItem from="1564277582544" duration="57525000" />
+      <workItem from="1564277582544" duration="73132000" />
     </task>
     <servers />
   </component>
@@ -178,8 +190,8 @@
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/resilapp_backend$SQL_Database.coverage" NAME="SQL_Database Coverage Results" MODIFIED="1564296703186" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/resilapp_backend$resilapp.coverage" NAME="resilapp Coverage Results" MODIFIED="1564421865213" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/resilapp_backend$SQL_Database.coverage" NAME="SQL_Database Coverage Results" MODIFIED="1564438215600" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/resilapp_backend$resilapp.coverage" NAME="resilapp Coverage Results" MODIFIED="1564439445399" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/resilapp_backend$Cloudant_DB.coverage" NAME="Cloudant_DB Coverage Results" MODIFIED="1564419265045" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
