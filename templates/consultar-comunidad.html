@@ -124,6 +124,26 @@
                 </tr>
                 <tr>
                     <td>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">Paso actual</span>
+                            </div>
+                            <input id="current_badge" type="text" size="50" class="form-control" placeholder="ID">
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">Tipo</span>
+                            </div>
+                            <input id="current_badge_type" type="text" size="50" class="form-control" placeholder="ID">
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
                         <div id="community-id" style="display: none;">
                             <input id="community_id" type="text" class="form-control">
                         </div>
@@ -168,6 +188,7 @@
             $('#town-id').val("");
             $('#community-stage').val("");
             $('#community-step').val("");
+            $('#create_community').attr('disabled', 'disabled');
             let getUrl = window.location;
             let baseUrl = getUrl.protocol + "//" + getUrl.host;
             $.get(baseUrl + "/api/resilience/stages_count")
@@ -189,6 +210,9 @@
 
         $('#community-stage').change(function () {
             let stage_number = $('#community-stage').val();
+            if (steps_by_stage === undefined) {
+                get_steps_by_stage();
+            }
             $('#community-step').attr("max", String(steps_by_stage[stage_number]));
         });
 
@@ -213,10 +237,58 @@
         });
 
         //Change page to create a community with its resilience details
-        $('#create_community').click(function () {
+        $('#create_community').click(async function () {
             let town = $('#community-select').val();
             let city = $('#city-select').val();
             let state = $('#state-select').val();
+            let getUrl = window.location;
+            let baseUrl = getUrl.protocol + "//" + getUrl.host;
+            let communities_url = baseUrl + "/api/communities/";
+            let percentages_url = "/api/resilience/accomplished_percentages/";
+            let stage = $('#community-stage').val();
+            let step = $('#community-step').val();
+            let community_percentages_url = percentages_url.concat(
+                stage,
+                "/",
+                step
+            );
+            let community_url = communities_url.concat(state, "/", city, "/", town);
+            let current_badge_url = baseUrl + "/api/resilience/badge/" + stage + "/" + step;
+            let current_badge = {};
+            let POST_OBJECT = {};
+            POST_OBJECT.RESILIENCIA = {};
+            POST_OBJECT.RESILIENCIA.RESILIENCIA = {};
+            POST_OBJECT.RESILIENCIA.RESILIENCIA.badges = [];
+            POST_OBJECT.RESILIENCIA.RESILIENCIA.stage = Number(stage);
+            POST_OBJECT.RESILIENCIA.RESILIENCIA.step = Number(step);
+            $.when(
+                $.get(community_url, function (data) {
+                    POST_OBJECT.RESILIENCIA.RESILIENCIA.badges = data.RESILIENCIA.badges;
+                }),
+                $.get(current_badge_url, function (data) {
+                    let this_badge = data;
+                    let date = new Date();
+                    let badge_date = String(date.getFullYear()) + '-' + String(Number(date.getMonth()) + 1) + '-' + date.getDate();
+                    this_badge.date = badge_date;
+                    POST_OBJECT.RESILIENCIA.RESILIENCIA.badges.push(this_badge);
+                }),
+                $.get(community_percentages_url, function (data) {
+                    POST_OBJECT.RESILIENCIA.RESILIENCIA.resilience_stage_level = data.Stage;
+                    POST_OBJECT.RESILIENCIA.RESILIENCIA.resilience_total_level = data.Total;
+                })
+            ).then(function () {
+                    console.log(JSON.stringify(POST_OBJECT));
+                        $.ajaxSetup({
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            }
+                        });
+                        $.post(community_url, JSON.stringify(POST_OBJECT), function (data, status) {
+                            alert("Data: " + data + "\nStatus: " + status);
+                        });
+                }
+            )
         });
 
         //Submit data when search button is pressed
@@ -262,6 +334,16 @@
                                 "aria-valuenow":String(badges_number)
                                 });
                         });
+                        $('#community_id').val(data.RESILIENCIA['_id']);
+                        $('#community_rev').val(data.RESILIENCIA['_rev']);
+                        $.get(baseUrl + "/api/resilience/badge/"
+                            + $('#community-stage').val()
+                            + "/"
+                            + $('#community-step').val())
+                            .done(function (data) {
+                                $('#current_badge').val(data.description);
+                                $('#current_badge_type').val(data.type);
+                            });
                     } else {
                         $('#community-name').val('Community not found');
                     }
@@ -272,7 +354,9 @@
                 $('#town-name').empty();
                 $('#town-id').empty();
             }
+            $('#create_community').removeAttr('disabled');
         });
+
         $('#state-select').change(function () {
             $('#community-select').empty();
             $('#city-select').empty();

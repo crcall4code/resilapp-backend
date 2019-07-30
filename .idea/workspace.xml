@@ -2,14 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="83171f85-639d-428d-a5ef-c943c2764095" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/static/js/bootstrap-input-spinner.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/luisd.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/luisd.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SQL_Database.py" beforeDir="false" afterPath="$PROJECT_DIR$/SQL_Database.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/resilapp.py" beforeDir="false" afterPath="$PROJECT_DIR$/resilapp.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/comunidades.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/consultar-comunidad.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/poblados.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/poblados.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/consultar-comunidad.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/consultar-comunidad.html" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -166,7 +162,7 @@
       <workItem from="1564030858842" duration="121000" />
       <workItem from="1564032124955" duration="1616000" />
       <workItem from="1564277408988" duration="166000" />
-      <workItem from="1564277582544" duration="73132000" />
+      <workItem from="1564277582544" duration="85570000" />
     </task>
     <servers />
   </component>
@@ -191,7 +187,7 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/resilapp_backend$SQL_Database.coverage" NAME="SQL_Database Coverage Results" MODIFIED="1564438215600" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/resilapp_backend$resilapp.coverage" NAME="resilapp Coverage Results" MODIFIED="1564439445399" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/resilapp_backend$resilapp.coverage" NAME="resilapp Coverage Results" MODIFIED="1564456607637" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/resilapp_backend$Cloudant_DB.coverage" NAME="Cloudant_DB Coverage Results" MODIFIED="1564419265045" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

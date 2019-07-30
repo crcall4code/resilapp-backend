@@ -1,9 +1,8 @@
 # -*- coding: latin_1 -*-
-from sqlalchemy import Text, Float, Integer, MetaData, create_engine, Table, Column, insert, select, and_, distinct, \
-    update
-from sqlalchemy.sql import func
-from json import dumps
 from pprint import pprint
+
+from sqlalchemy import Text, Float, Integer, MetaData, create_engine, Table, Column, select, and_
+from sqlalchemy.sql import func
 
 
 class Db2Database:
@@ -55,16 +54,13 @@ class Db2Database:
                                      Column('DESCRIPCION', Text(), nullable=True)
                                      )
 
-# ****************************** TOWNS FUNCTIONS *****************************************
+    # ****************************** TOWNS FUNCTIONS *****************************************
     def select_all_towns(self):
         select_query = select([self.Towns])
         results_proxy = self.mainConnection.execute(select_query)
         towns_names = []
         results = results_proxy.fetchall()
         for row in results:
-            # town_city_state = "({},{},{})".format(row[4].replace("\u00c3\u2018","Ñ"),row[3].replace
-            # ("\u00c3\u2018","Ñ"),row[2])
-            # town_city_state = "({},{},{})".format(row[4].replace("Ã‘","Ñ"),row[3].replace("Ã‘","Ñ"),row[2])
             town_city_state = "({},{},{})".format(row[4], row[3], row[2])
             towns_names.append(town_city_state)
         results_proxy.close()
@@ -83,8 +79,6 @@ class Db2Database:
         print(select_query)
         results_proxy = self.mainConnection.execute(select_query)
         cities = results_proxy.fetchall()
-        # cities = [city[0].replace("\u00c3\u2018","Ñ") for city in cities]
-        # cities = [city[0].replace("Ã‘","Ñ") for city in cities]
         cities = [city[0] for city in cities]
         results_proxy.close()
         return cities
@@ -93,15 +87,11 @@ class Db2Database:
         select_query = select([self.Towns.c.PUEBLO]).where(
             and_(
                 self.Towns.c.PROVINCIA == State,
-                # self.towns.c.CANTON==city.replace("Ñ","\u00c3\u2018")
-                # self.towns.c.CANTON==city.replace("Ñ","Ã‘")
                 self.Towns.c.CANTON == City
             )
         )
         results_proxy = self.mainConnection.execute(select_query)
         towns = results_proxy.fetchall()
-        # towns = [town[0].replace("\u00c3\u2018","Ñ") for town in towns]
-        # towns = [town[0].replace("Ã‘","Ñ") for town in towns]
         towns = [town[0] for town in towns]
         results_proxy.close()
         return towns
@@ -113,10 +103,6 @@ class Db2Database:
         towns_list = []
         for Town in towns:
             town_as_dictionary = dict(
-                # CANTON=Town[3].replace("\u00c3\u2018","Ñ"),
-                # PUEBLO=Town[4].replace("\u00c3\u2018","Ñ")
-                # CANTON=Town[3].replace("Ã‘","Ñ"),
-                # PUEBLO=Town[4].replace("Ã‘","Ñ")
                 CANTON=Town[3],
                 PUEBLO=Town[4]
             )
@@ -128,8 +114,6 @@ class Db2Database:
         select_query = select([self.Towns]).where(
             and_(
                 self.Towns.c.PROVINCIA == State,
-                # self.Towns.c.CANTON==city.replace("Ñ","\u00c3\u2018")
-                # self.Towns.c.CANTON==city.replace("Ñ","Ã‘")
                 self.Towns.c.CANTON == City
             )
         )
@@ -138,8 +122,6 @@ class Db2Database:
         towns_list = []
         for Town in towns:
             town_as_dictionary = dict(
-                # PUEBLO=Town[4].replace("\u00c3\u2018","Ñ")
-                # PUEBLO=Town[4].replace("Ã‘","Ñ")
                 PUEBLO=Town[4]
             )
             towns_list.append(town_as_dictionary)
@@ -150,10 +132,6 @@ class Db2Database:
         select_query = select([self.Towns]).where(
             and_(
                 self.Towns.c.PROVINCIA == state,
-                # self.Towns.c.CANTON==city.replace("Ñ","\u00c3\u2018"),
-                # self.Towns.c.PUEBLO==town.replace("Ñ","\u00c3\u2018")
-                # self.Towns.c.CANTON==city.replace("Ñ","Ã‘"),
-                # self.Towns.c.PUEBLO==town.replace("Ñ","Ã‘")
                 self.Towns.c.CANTON == city,
                 self.Towns.c.PUEBLO == town
             )
@@ -175,7 +153,7 @@ class Db2Database:
         results_proxy.close()
         return town_as_dictionary
 
-# ************************* COMMUNITIES FUNCTIONS **************************************
+    # ************************* COMMUNITIES FUNCTIONS **************************************
     def insert_community(self, community_data_as_dictionary):
         if not self.is_community_in_database(community_data_as_dictionary)[0]:
             insert_statement = self.Communities.insert().values(
@@ -183,7 +161,7 @@ class Db2Database:
                 PUEBLO=community_data_as_dictionary["PUEBLO"]
             )
             insert_statement.compile().params
-            result = self.mainConnection.execute(insert_statement)
+            self.mainConnection.execute(insert_statement)
             insert_message = "Community added to database."
         else:
             self.update_community(community_data_as_dictionary)
@@ -237,11 +215,11 @@ class Db2Database:
         community = self.select_community_dictionary_by_poblac_id(town['POBLAC_ID'])
         return community
 
-# ***************************** RESILIENCE FUNCTIONS ******************************
+    # ***************************** RESILIENCE FUNCTIONS ******************************
     def select_all_resilience_steps(self):
         select_query = select([self.Resiliencia]).order_by(
-                                                            self.Resiliencia.c.Etapa.asc()
-                                                            )
+            self.Resiliencia.c.Etapa.asc()
+        )
         results_proxy = self.mainConnection.execute(select_query)
         resilience_steps = results_proxy.fetchall()
         # Clean list to get rid of Stage id, titles, references, achievements
@@ -250,6 +228,31 @@ class Db2Database:
                             step[2] != 0]  # Stage,step,detail
         results_proxy.close()
         return resilience_steps
+
+    def select_step_with_type(self, stage, step):
+        select_query = select([self.Resiliencia]).where(
+            and_(
+                self.Resiliencia.c.Etapa == stage,
+                self.Resiliencia.c.Paso == step
+            )
+        ).order_by(
+            self.Resiliencia.c.Etapa.asc()
+        )
+        results_proxy = self.mainConnection.execute(select_query)
+        resilience_step = results_proxy.fetchone()
+        if resilience_step is not None:
+            print(resilience_step)
+            step_with_type = dict(
+                badge_id='{}{}{}'.format(resilience_step[1], '-', resilience_step[2]),
+                description=resilience_step[3]
+            )
+            if resilience_step[5] is not None:
+                step_with_type['type'] = "badge"
+                step_with_type['indicator'] = resilience_step[5]
+            else:
+                step_with_type['type'] = "step"
+        results_proxy.close()
+        return step_with_type
 
     def select_all_stages(self):
         # Query only registers where Step equals zero --> step zero equals stage title
@@ -262,10 +265,10 @@ class Db2Database:
 
     def select_all_indicators(self):
         select_query = select([self.Resiliencia]).where(
-                                                        self.Resiliencia.c.INDICADOR != None
-                                                        ).order_by(
-                                                                    self.Resiliencia.c.Etapa.asc()
-                                                                    )
+            self.Resiliencia.c.INDICADOR != None
+        ).order_by(
+            self.Resiliencia.c.Etapa.asc()
+        )
         results_proxy = self.mainConnection.execute(select_query)
         indicators = results_proxy.fetchall()
         indicators = [dict(
@@ -278,13 +281,13 @@ class Db2Database:
         results_proxy.close()
         return indicators
 
-# ************** COUNTERS *****************************
+    # ************** COUNTERS *****************************
     def count_resilience_steps(self):
         select_query = select([func.count(
-                                        self.Resiliencia.c.ID
-                                        ).label('Pasos')]).where(
-                                                                self.Resiliencia.c.Paso > 0
-                                                                )
+            self.Resiliencia.c.ID
+        ).label('Pasos')]).where(
+            self.Resiliencia.c.Paso > 0
+        )
         results_proxy = self.mainConnection.execute(select_query)
         record = results_proxy.first()
         return record.Pasos
@@ -315,7 +318,7 @@ class Db2Database:
         )
         results_proxy = self.mainConnection.execute(select_query)
         record = results_proxy.first()
-        accomplished_steps = int(record.Pasos) + (int(step)-1)
+        accomplished_steps = int(record.Pasos) + (int(step) - 1)
         return accomplished_steps
 
     def count_accomplished_resilience_steps_within_stage(self, stage, step):
@@ -333,9 +336,9 @@ class Db2Database:
     def get_steps_by_stage(self):
         steps_in_stages = {}
         stages = int(self.count_resilience_stages())
-        for stage in range(1, stages+1):
+        for stage in range(1, stages + 1):
             steps = int(self.count_resilience_steps_within_stage(stage))
-            steps_in_stages.update({stage:steps})
+            steps_in_stages.update({stage: steps})
         return steps_in_stages
 
     def get_accomplished_percentages_total_and_stage(self, current_stage, current_step):

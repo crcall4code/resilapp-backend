@@ -105,7 +105,6 @@ def community_and_resilience(province, city, town):
             )
         return jsonify(community)
     elif request.method == 'POST':
-        db_resilience_steps = sql_db.get_resilience_instance()
         # Get town from SQL database, to avoid saving non existent towns
         town = sql_db.select_town_dictionary_by_state_city_and_name(province, city, town)
         # Create community SQL database object from town object
@@ -114,6 +113,8 @@ def community_and_resilience(province, city, town):
         # Get object containing community resilience from request,
         # the main key must be "RESILIENCIA"
         resiliencia_from_request = request.json['RESILIENCIA']
+        print("***********REQUEST***************")
+        print(resiliencia_from_request)
         # Subsequent keys:
         #   POBLAC_ID (from database query above)
         #   PUEBLO (concatenation, from database query above)
@@ -213,6 +214,16 @@ def get_steps():
     return jsonify(steps)
 
 
+# Resilience Step for Badge assign purposes
+@app.route('/api/resilience/badge/<stage>/<step>', methods=['GET'])
+@cross_origin(send_wildcard=True)
+def get_step_or_badge(stage, step):
+    step = sql_db.select_step_with_type(stage, step)
+    if not step:
+        step.append("Error in database.")
+    return jsonify(step)
+
+
 # List of Resilience indicators
 @app.route('/api/resilience/indicators', methods=['GET'])
 @cross_origin(send_wildcard=True)
@@ -253,11 +264,13 @@ def get_steps_count_within_stage(stage):
     steps_count_within_stage = sql_db.count_resilience_steps_within_stage(stage)
     if not steps_count_within_stage:
         steps_count_within_stage.append("Error in database.")
-    steps_count_within_stage = dict(Steps_count_within_stage=int(steps_count_within_stage))
+        steps_count_within_stage = dict(Steps_count_within_stage=steps_count_within_stage)
+    else:
+        steps_count_within_stage = dict(Steps_count_within_stage=int(steps_count_within_stage))
     return jsonify(steps_count_within_stage)
 
 
-# Number of resilience steps within a given resilience stage
+# Number of resilience steps organized by resilience stage
 @app.route('/api/resilience/steps_count_by_stage/', methods=['GET'])
 @cross_origin(send_wildcard=True)
 def get_steps_count_by_stage():
@@ -275,7 +288,9 @@ def get_total_accomplished_steps(current_stage, current_step):
     total_accomplished_steps = sql_db.count_accomplished_resilience_steps(current_stage, current_step)
     if not total_accomplished_steps:
         total_accomplished_steps.append("Error in database.")
-    total_accomplished_steps = dict(Total_accomplished_steps=int(total_accomplished_steps))
+        total_accomplished_steps = dict(Total_accomplished_steps=total_accomplished_steps)
+    else:
+        total_accomplished_steps = dict(Total_accomplished_steps=int(total_accomplished_steps))
     return jsonify(total_accomplished_steps)
 
 
@@ -286,7 +301,9 @@ def get_accomplished_steps_within_stage(current_stage, current_step):
     accomplished_steps_within_stage = sql_db.count_accomplished_resilience_steps_within_stage(current_stage, current_step)
     if not accomplished_steps_within_stage:
         accomplished_steps_within_stage.append("Error in database.")
-    accomplished_steps_within_stage = dict(Accomplished_steps_within_stage=int(accomplished_steps_within_stage))
+        accomplished_steps_within_stage = dict(Accomplished_steps_within_stage=accomplished_steps_within_stage)
+    else:
+        accomplished_steps_within_stage = dict(Accomplished_steps_within_stage=int(accomplished_steps_within_stage))
     return jsonify(accomplished_steps_within_stage)
 
 
